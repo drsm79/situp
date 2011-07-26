@@ -12,9 +12,9 @@ Markdown compile if markdown installed on upload of _attachments http://daringfi
 Better support of BigCouch
 situp.py location aware. If not in an app directory only allows generate app command, copies itself into that app.
 
-Minimal generate:
+Minimal create:
 ----------------------------------------
-	-g/--generate {app, design, view, list, show, update, filter...} name
+	create {app, design, view, list, show, update, filter...} name
  * Generator base class for all generate options
  * View generator takes optional reduce - use a builtin reduce instead of making a js function
  * index option adds the generated thing to an index file
@@ -24,8 +24,6 @@ Extensible plugin/vendor support
  * Backbone
  * YUI
  * evently
-	-i/--install to bring in plugins
-	--github pull in code from github
 
 Directory structure
 ----------------------------------------
@@ -39,4 +37,5 @@ Additional Options
 ----------------------------------------
 	--clean delete database
 	--check prompt to create database
-	-b/--browse open app in browser
+	-B/--browse open app in browser
+	-a autopush
