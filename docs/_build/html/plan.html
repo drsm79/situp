@@ -1,0 +1,179 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>situp.py &mdash; situp v0.1.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
+    <link rel="next" title="What is a CouchApp" href="whatisacouchapp.html" />
+    <link rel="prev" title="Welcome to situp’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="whatisacouchapp.html" title="What is a CouchApp"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to situp’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="situp-py">
+<h1>situp.py<a class="headerlink" href="#situp-py" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="general-features">
+<h2>General features<a class="headerlink" href="#general-features" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Build command creates json docs and tar ball of the app</li>
+<li>Install command pushes it to server</li>
+<li>Password protection - ask or read from file</li>
+<li>NO externals, use plain python, support py3?</li>
+<li>Markdown compile if markdown installed on upload of _attachments <a class="reference external" href="http://daringfireball.net/projects/markdown/">http://daringfireball.net/projects/markdown/</a></li>
+<li>Better support of BigCouch</li>
+<li>situp.py location aware. If not in an app directory only allows generate app command, copies itself into that app.</li>
+</ul>
+</div>
+<div class="section" id="minimal-create">
+<h2>Minimal create:<a class="headerlink" href="#minimal-create" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>create {app, design, view, list, show, update, filter...} name</li>
+<li>Generator base class for all generate options</li>
+<li>View generator takes optional reduce - use a builtin reduce instead of making a js function</li>
+<li>index option adds the generated thing to an index file</li>
+</ul>
+</div>
+<div class="section" id="extensible-plugin-vendor-support">
+<h2>Extensible plugin/vendor support<a class="headerlink" href="#extensible-plugin-vendor-support" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Backbone</li>
+<li>YUI</li>
+<li>evently</li>
+</ul>
+</div>
+<div class="section" id="directory-structure">
+<h2>Directory structure<a class="headerlink" href="#directory-structure" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>design<ul>
+<li>Similar to now</li>
+</ul>
+</li>
+<li>docs<ul>
+<li>Documents to push, also mapped to file/directory structure</li>
+</ul>
+</li>
+<li>settings.json - server URL, user/pass etc</li>
+</ul>
+</div>
+<div class="section" id="additional-options">
+<h2>Additional Options<a class="headerlink" href="#additional-options" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>&#8211;clean delete database</li>
+<li>&#8211;check prompt to create database</li>
+<li>-B/&#8211;browse open app in browser</li>
+<li>-a autopush</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">situp.py</a><ul>
+<li><a class="reference internal" href="#general-features">General features</a></li>
+<li><a class="reference internal" href="#minimal-create">Minimal create:</a></li>
+<li><a class="reference internal" href="#extensible-plugin-vendor-support">Extensible plugin/vendor support</a></li>
+<li><a class="reference internal" href="#directory-structure">Directory structure</a></li>
+<li><a class="reference internal" href="#additional-options">Additional Options</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to situp&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="whatisacouchapp.html"
+                        title="next chapter">What is a CouchApp</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/plan.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="whatisacouchapp.html" title="What is a CouchApp"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to situp’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Simon Metson.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>situp public API &mdash; situp v0.1.1 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
+    <link rel="prev" title="What is a CouchApp" href="whatisacouchapp.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="whatisacouchapp.html" title="What is a CouchApp"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-situp">
+<span id="situp-public-api"></span><h1>situp public API<a class="headerlink" href="#module-situp" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="situp.Backbone">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Backbone</tt><a class="reference internal" href="_modules/situp.html#Backbone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Backbone" title="Permalink to this definition">¶</a></dt>
+<dd><p>Install Backbone</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Command">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Command</tt><a class="reference internal" href="_modules/situp.html#Command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Command" title="Permalink to this definition">¶</a></dt>
+<dd><p>A command has a name, an option parser and a dictionary of sub commands it
+can call.</p>
+<dl class="method">
+<dt id="situp.Command.check_args">
+<tt class="descname">check_args</tt><big>(</big><em>options</em>, <em>args</em><big>)</big><a class="reference internal" href="_modules/situp.html#Command.check_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Command.check_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the given arguments are right.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="situp.Command.exit_invalid">
+<tt class="descname">exit_invalid</tt><big>(</big><em>msg</em><big>)</big><a class="reference internal" href="_modules/situp.html#Command.exit_invalid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Command.exit_invalid" title="Permalink to this definition">¶</a></dt>
+<dd><p>The command doesn&#8217;t exist so bail</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="situp.Command.print_help">
+<tt class="descname">print_help</tt><big>(</big><em>args</em><big>)</big><a class="reference internal" href="_modules/situp.html#Command.print_help"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Command.print_help" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encapsulate the Command&#8217;s option parser&#8217;s print_help() method here in
+case there&#8217;s some reason to override it.</p>
+<p>parser.print_help() actually prints to the screen, so just run that.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="situp.Command.process_args">
+<tt class="descname">process_args</tt><big>(</big><em>args=None</em>, <em>options=None</em><big>)</big><a class="reference internal" href="_modules/situp.html#Command.process_args"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Command.process_args" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process the option parser, updating it with data from parent parser
+then check the args are valid.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="situp.Command.register_sub_commands">
+<tt class="descname">register_sub_commands</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/situp.html#Command.register_sub_commands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Command.register_sub_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a dummy method for subclasses to fill in</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Create">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Create</tt><a class="reference internal" href="_modules/situp.html#Create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a component of a CouchApp. See View(), ListGen(), Show(), Design(),
+App() and Document()</p>
+<dl class="method">
+<dt id="situp.Create.register_sub_commands">
+<tt class="descname">register_sub_commands</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/situp.html#Create.register_sub_commands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Create.register_sub_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up the sub_commands and the OptionParser.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Evently">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Evently</tt><a class="reference internal" href="_modules/situp.html#Evently"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Evently" title="Permalink to this definition">¶</a></dt>
+<dd><p>Install Evently</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Fetch">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Fetch</tt><a class="reference internal" href="_modules/situp.html#Fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy a remote CouchApp into the working directory.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Generator">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Generator</tt><a class="reference internal" href="_modules/situp.html#Generator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Generator" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generator knows how to create files and where to create them.</p>
+<dl class="method">
+<dt id="situp.Generator.run_command">
+<tt class="descname">run_command</tt><big>(</big><em>args</em>, <em>options</em><big>)</big><a class="reference internal" href="_modules/situp.html#Generator.run_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Generator.run_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the generator</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.InstallVendor">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">InstallVendor</tt><a class="reference internal" href="_modules/situp.html#InstallVendor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.InstallVendor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Command to install a vendor from a remote source.</p>
+<dl class="method">
+<dt id="situp.InstallVendor.register_sub_commands">
+<tt class="descname">register_sub_commands</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/situp.html#InstallVendor.register_sub_commands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.InstallVendor.register_sub_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up the sub_commands and the OptionParser.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Package">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Package</tt><a class="headerlink" href="#situp.Package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Package(url, filter)</p>
+<dl class="attribute">
+<dt id="situp.Package.filter">
+<tt class="descname">filter</tt><a class="headerlink" href="#situp.Package.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>itemgetter(item, ...) &#8211;&gt; itemgetter object</p>
+<p>Return a callable object that fetches the given item(s) from its operand.
+After, f=itemgetter(2), the call f(r) returns r[2].
+After, g=itemgetter(2,5,3), the call g(r) returns (r[2], r[5], r[3])</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="situp.Package.url">
+<tt class="descname">url</tt><a class="headerlink" href="#situp.Package.url" title="Permalink to this definition">¶</a></dt>
+<dd><p>itemgetter(item, ...) &#8211;&gt; itemgetter object</p>
+<p>Return a callable object that fetches the given item(s) from its operand.
+After, f=itemgetter(2), the call f(r) returns r[2].
+After, g=itemgetter(2,5,3), the call g(r) returns (r[2], r[5], r[3])</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Push">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Push</tt><a class="reference internal" href="_modules/situp.html#Push"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Push" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Push command sends the application to the CouchDB server.</p>
+<dl class="method">
+<dt id="situp.Push.run_command">
+<tt class="descname">run_command</tt><big>(</big><em>args</em>, <em>options</em><big>)</big><a class="reference internal" href="_modules/situp.html#Push.run_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Push.run_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a python dictionary of the application, jsonise it and push it to
+CouchDB</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.SitUp">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">SitUp</tt><a class="reference internal" href="_modules/situp.html#SitUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.SitUp" title="Permalink to this definition">¶</a></dt>
+<dd><p>The main user interface command.</p>
+<dl class="method">
+<dt id="situp.SitUp.register_sub_commands">
+<tt class="descname">register_sub_commands</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/situp.html#SitUp.register_sub_commands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.SitUp.register_sub_commands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register my commands</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Vendor">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Vendor</tt><a class="reference internal" href="_modules/situp.html#Vendor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Vendor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vendors are generators that download external code into the right place</p>
+<dl class="method">
+<dt id="situp.Vendor.run_command">
+<tt class="descname">run_command</tt><big>(</big><em>args</em>, <em>options</em><big>)</big><a class="reference internal" href="_modules/situp.html#Vendor.run_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Vendor.run_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Vendors behave differently to other generators</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.View">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">View</tt><a class="reference internal" href="_modules/situp.html#View"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.View" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create the files for a view.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.YUI">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">YUI</tt><a class="reference internal" href="_modules/situp.html#YUI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.YUI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Install YUI</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="whatisacouchapp.html"
+                        title="previous chapter">What is a CouchApp</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/code.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="whatisacouchapp.html" title="What is a CouchApp"
+             >previous</a> |</li>
+        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Simon Metson.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
