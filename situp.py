@@ -479,6 +479,13 @@ class View(Generator):
                     choices=['sum', 'count', 'stats'],
                     help="Use a built in reduce (one of sum, count, stats)")
 
+        for reducer in ['sum', 'count', 'stats']:
+            self.parser.add_option("--%s" % reducer,
+                    dest="built_in", default=False,
+                    action="store_const", const=reducer,
+                    help="Use the %s built in reduce, shorthand for --builtin-reduce=%s" % (reducer, reducer)
+                    )
+
     def _push_template(self, path, args, options):
         """
         Create files following _templates, built_in should be either unset
