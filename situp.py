@@ -10,6 +10,7 @@ import tarfile
 import zipfile
 import shutil
 import uuid
+import mimetypes
 from optparse import OptionParser, OptionGroup
 from collections import defaultdict, namedtuple
 from urlparse import urlunparse
@@ -259,14 +260,6 @@ class Push(Command):
             f = urllib2.urlopen(req)
             print f.read()
 
-    def _push_file(self, afile, servers):
-        """
-        Push attachment into the server
-        TODO: spin off into a worker thread
-        """
-        pass
-#        print 'upload %s to %s/%s' % (afile.filename, server, afile.path)
-
     def _walk_design(self, name, design):
         """
         Walk through the design document, building a dictionary as it goes.
@@ -286,22 +279,30 @@ class Push(Command):
                     a_dict[k] = recursive_update(a_dict[k], v)
             return a_dict
 
-        attachments = []
+        attachments = {}
         app = {'_id': name}
         for root, dirs, files in os.walk(design):
             path = root.split(name)[1].split('/')[1:]
             if files:
-                if '_attachments' in path:
-                    for afile in files:
-                        filepath = os.path.join(*path)
-                        attachments.append(LocatedFile(filepath, afile))
-                else:
-                    d = {}
-                    for afile in files:
+                d = {}
+                for afile in files:
+                    if '_attachments' in path:
+                        path.remove('_attachments')
+                        path.append(afile)
+                        print '/'.join(path)
+                        print mimetypes.guess_type(os.path.join(root, afile))[0]
+                        attachments['/'.join(path)] = {
+                            'data': base64.encodestring(open(os.path.join(root, afile)).read()),
+                            'content_type': mimetypes.guess_type(os.path.join(root, afile))[0]
+                        }
+                    else:
                         d[afile] = open(os.path.join(root, afile)).read()
-                    app = recursive_update(app, reduce(nest, reversed(path), d))
+                app = recursive_update(app, reduce(nest, reversed(path), d))
 
-        return app, attachments
+        if attachments:
+            app['_attachments'] = attachments
+
+        return app
 
     def run_command(self, args, options):
         """
@@ -319,9 +320,8 @@ class Push(Command):
             for design in os.listdir(designs):
                 name = os.path.join('_design', design)
                 root = os.path.join(designs, design)
-                app, attachments = self._walk_design(name,root)
+                app = self._walk_design(name,root)
                 apps_to_push.append(app)
-                attachments_to_push.append(attachments)
             self._push_docs(apps_to_push, options.database, options.servers)
             # push attachments
 
