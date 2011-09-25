@@ -6,7 +6,7 @@ SPHINXROOT    = docs
 SPHINXOPTS    = -c $(SPHINXROOT)
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = docs/_build
+BUILDDIR      = web-docs/situp
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
