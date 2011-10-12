@@ -11,6 +11,7 @@ import zipfile
 import shutil
 import uuid
 import mimetypes
+import getpass
 from optparse import OptionParser, OptionGroup
 from collections import defaultdict, namedtuple
 from urlparse import urlunparse
@@ -27,6 +28,7 @@ class Command:
     """
     command_name = "interface"
     no_required_args = 0
+    required_opts = []
     dependencies = []
     usage = "usage: %prog [options] COMMAND [options] [args]"
 
@@ -86,8 +88,15 @@ class Command:
             (options, args) = self.parser.parse_args(args=args)
         else:
             (options, args) = self.parser.parse_args()
-        self.check_args(options, args)
 
+        die = False
+        for option in self.required_opts:
+            if options.ensure_value(option, 'NOTSET') == 'NOTSET':
+                print '%s is a required option and not set' % option
+                die = True
+        if die:
+            print 'Run command with -h/--help for further information'
+            sys.exit(1)
         return options, args
 
     def configure_logger(self, options):
@@ -160,19 +169,6 @@ class Command:
         self.parser.print_help()
         sys.exit(0)
 
-    def check_args(self, options, args):
-        """
-        Check that the given arguments are right.
-        """
-        pass
-        # if not options.cmd_help:
-        #     ok = self.no_required_args <= len(args)
-        #
-        #     # TODO some check on required options
-        #     if not ok:
-        #         self.exit_invalid('Missing command option')
-
-
     def exit_invalid(self, msg):
         """
         The command doesn't exist so bail
@@ -215,10 +211,53 @@ class SitUp(Command):
         """
         Register my commands
         """
-        sub_commands = [Create(), InstallVendor(), Push(), Fetch()]
+        sub_commands = [Create(), InstallVendor(), Push(), Fetch(), AddServer()]
         self._register(sub_commands)
 
 LocatedFile = namedtuple('LocatedFile', ['path', 'filename'])
+
+class AddServer(Command):
+    """
+    Add a server to the servers.json file
+    """
+    command_name = 'addserver'
+    required_opts = ['name', 'server']
+
+    def _add_options(self):
+        """
+        Give the OptionParser additional options
+        """
+        self.parser.add_option("-s", "--server",
+                dest="server",
+                help="The server to add [required]")
+        self.parser.add_option("-n", "--name",
+                dest="name",
+                help="The simple name server to add [required]")
+        #self.parser.add_option("--noauth",
+        #        dest="servers", default=[], action='append',
+        #        help="Push the app to one or more servers (multiple -s options are allowed)")
+        Command._add_options(self)
+
+    def process_args(self, args=None, options=None):
+        options, args = Command.process_args(self, args, options)
+        username = raw_input('Username for server, press enter for no user/password auth:')
+        if username:
+            options.auth_string = "%s" % base64.encodestring('%s:%s' % (
+                                           username, getpass.getpass())).strip()
+        return options, args
+
+    def run_command(self, args, options):
+        servers = {}
+        if os.path.exists('servers.json'):
+            f = open('servers.json')
+            servers = json.load(f)
+            f.close()
+        servers[options.name] = {'url':options.server}
+        if options.ensure_value('auth_string', False):
+            servers[options.name]['auth'] = options.auth_string
+        f = open('servers.json', 'w')
+        json.dump(servers, f)
+        f.close()
 
 class Push(Command):
     """
@@ -226,6 +265,7 @@ class Push(Command):
     """
     command_name = 'push'
     no_required_args = 0
+
     def _add_options(self):
         """
         Give the OptionParser additional options
@@ -247,18 +287,33 @@ class Push(Command):
         Push dictionaries into json docs in the server
         TODO: spin off into a worker thread
         """
-        for server in servers:
-            print 'upload %s to %s' % (db, server)
-            conn = httplib.HTTPConnection(server.strip('http://').strip('https://'))
-            conn.request("PUT", "/%s" % db)
-            conn.close()
+        for server in servers.keys():
+            srv = servers[server]
+            print 'upload to %s (%s/%s)' % (server, srv['url'], db)
+            try:
+                conn = None
+                if srv['url'].startswith('https://'):
+                    conn = httplib.HTTPSConnection(srv['url'].strip('https://'))
+                else:
+                    conn = httplib.HTTPConnection(srv['url'].strip('http://'))
 
-            req = urllib2.Request('%s/%s/_bulk_docs' % (server, db))
-            req.add_header("Content-Type", "application/json")
-            data = {'docs': docs_list}
-            req.add_data(json.dumps(data))
-            f = urllib2.urlopen(req)
-            print f.read()
+                if 'auth' in srv.keys():
+                    conn.request("PUT", "/%s" % db, headers={"Authorization": "Basic %s" % srv['auth']})
+                else:
+                    conn.request("PUT", "/%s" % db)
+                conn.close()
+
+                req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
+                req.add_header("Content-Type", "application/json")
+                if 'auth' in srv.keys():
+                    req.add_header("Authorization", "Basic %s" % srv['auth'])
+                data = {'docs': docs_list}
+                req.add_data(json.dumps(data))
+                f = urllib2.urlopen(req)
+                print f.read()
+            except Exception, e:
+                print "upload to %s failed" % server
+                print e
 
     def _walk_design(self, name, design):
         """
@@ -289,8 +344,6 @@ class Push(Command):
                     if '_attachments' in path:
                         path.remove('_attachments')
                         path.append(afile)
-                        print '/'.join(path)
-                        print mimetypes.guess_type(os.path.join(root, afile))[0]
                         attachments['/'.join(path)] = {
                             'data': base64.encodestring(open(os.path.join(root, afile)).read()),
                             'content_type': mimetypes.guess_type(os.path.join(root, afile))[0]
@@ -322,7 +375,19 @@ class Push(Command):
                 root = os.path.join(designs, design)
                 app = self._walk_design(name,root)
                 apps_to_push.append(app)
-            self._push_docs(apps_to_push, options.database, options.servers)
+
+            saved_servers = {}
+            servers_to_use = {}
+            if os.path.exists('servers.json'):
+                saved_servers = json.load(open('servers.json'))
+
+            for server in options.servers:
+                if server in saved_servers.keys():
+                    servers_to_use[server] = saved_servers[server]
+                else:
+                    servers_to_use[server] = {"url": server}
+
+            self._push_docs(apps_to_push, options.database, servers_to_use)
             # push attachments
 
 class Fetch(Command):
