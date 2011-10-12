@@ -29,9 +29,23 @@ Importing a vendor
 Will download and install the vendor backbone and its dependencies into the
 tst-app design.
 
+Defining servers
+----------------------------------------
+::
+    situp.py addserver -n dev -s http://localhost:5984
+
+This creates a servers.json file in the current directory and stores the server
+name, url and auth token in there. *DO NOT* make your servers.json file public
+since people will be able to access your couch instances.
+
 Pushing to a set of servers
 ----------------------------------------
 ::
     situp.py -d tst-app push -s http://localhost:5984 -d databasename
 
 The -s option can be specified multiple times.
+
+If a server has been defined (see above) you can refer to it via it's short
+name:
+::
+    situp.py -d tst-app push -s dev -d databasename

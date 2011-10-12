@@ -22,7 +22,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="situp v0.1.1 documentation" href="index.html" /> 
+    <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
+    <link rel="next" title="situp.py" href="plan.html" />
+    <link rel="prev" title="Welcome to situp’s documentation!" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -32,8 +34,11 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
+          <a href="plan.html" title="situp.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to situp’s documentation!"
+             accesskey="P">previous</a> |</li>
         <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -75,6 +80,16 @@ map.js and a _sum built in reduce.</p>
 <p>Will download and install the vendor backbone and its dependencies into the
 tst-app design.</p>
 </div>
+<div class="section" id="defining-servers">
+<h2>Defining servers<a class="headerlink" href="#defining-servers" title="Permalink to this headline">¶</a></h2>
+<dl class="docutils">
+<dt>::</dt>
+<dd>situp.py addserver -n dev -s <a class="reference external" href="http://localhost:5984">http://localhost:5984</a></dd>
+</dl>
+<p>This creates a servers.json file in the current directory and stores the server
+name, url and auth token in there. <em>DO NOT</em> make your servers.json file public
+since people will be able to access your couch instances.</p>
+</div>
 <div class="section" id="pushing-to-a-set-of-servers">
 <h2>Pushing to a set of servers<a class="headerlink" href="#pushing-to-a-set-of-servers" title="Permalink to this headline">¶</a></h2>
 <dl class="docutils">
@@ -82,6 +97,10 @@ tst-app design.</p>
 <dd>situp.py -d tst-app push -s <a class="reference external" href="http://localhost:5984">http://localhost:5984</a> -d databasename</dd>
 </dl>
 <p>The -s option can be specified multiple times.</p>
+<p>If a server has been defined (see above) you can refer to it via it&#8217;s short
+name:</p>
+<div class="highlight-python"><pre>situp.py -d tst-app push -s dev -d databasename</pre>
+</div>
 </div>
 </div>
 
@@ -96,11 +115,18 @@ tst-app design.</p>
 <li><a class="reference internal" href="#">Using situp.py</a><ul>
 <li><a class="reference internal" href="#creating-a-view">Creating a view</a></li>
 <li><a class="reference internal" href="#importing-a-vendor">Importing a vendor</a></li>
+<li><a class="reference internal" href="#defining-servers">Defining servers</a></li>
 <li><a class="reference internal" href="#pushing-to-a-set-of-servers">Pushing to a set of servers</a></li>
 </ul>
 </li>
 </ul>
 
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to situp&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="plan.html"
+                        title="next chapter">situp.py</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/usage.txt"
@@ -130,8 +156,11 @@ tst-app design.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
+          <a href="plan.html" title="situp.py"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to situp’s documentation!"
+             >previous</a> |</li>
         <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
       </ul>
     </div>
