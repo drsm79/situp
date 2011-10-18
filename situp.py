@@ -438,18 +438,18 @@ class InstallVendor(Command):
                             "locations by specifying the URL on the command"
                             " line")
         for vendor in self.sub_commands.values():
-            for external, url in vendor._template.items():
+            for external, package in vendor._template.items():
                 group.add_option("--%s" % external, metavar="URL",
                             dest="alt_%s" % external, default=False,
                             help="Download %s from URL instead of the default [%s]"\
-                                % (external, url))
+                                % (external, package.url))
         self.parser.add_option_group(group)
 
     def register_sub_commands(self):
         """
         Set up the sub_commands and the OptionParser.
         """
-        self._register([ Backbone() ])
+        self._register([ Backbone(), d3() ])
 
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid vendors are: %s" % ", ".join(commands)
@@ -697,7 +697,14 @@ class Evently(Vendor):
     command_name = 'evently'
     _template = {}
 
-
+class d3(Vendor):
+    """
+    Install d3
+    """
+    command_name = 'd3'
+    _template = {
+        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', []),
+    }
 
 if __name__ == "__main__":
     situp = SitUp()
