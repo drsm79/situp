@@ -316,9 +316,8 @@ class Push(Command):
                     # HEAD the doc
                     head = request(srv['url'], 'HEAD', "/%s/%s" % (db, docid), srv.get('auth', False))
                     # get its _rev, append _rev to the doc dict
-                    rev = head.getheader('etag', False).replace('"', '')
-                    if rev:
-                        doc['_rev'] = rev
+                    if head.getheader('etag', False):
+                        doc['_rev'] = head.getheader('etag', False).replace('"', '')
 
                 req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
                 req.add_header("Content-Type", "application/json")
