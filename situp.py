@@ -46,6 +46,8 @@ class Command:
         self.parser.disable_interspersed_args()
         self.register_sub_commands()
         self.parser.set_usage(self.usage)
+
+        self.parser.epilog = " ".join(str(self.__doc__).split())
         self._add_options()
 
     def __call__(self, args=None, options=None):
@@ -291,17 +293,32 @@ class Push(Command):
             srv = servers[server]
             print 'upload to %s (%s/%s)' % (server, srv['url'], db)
             try:
-                conn = None
-                if srv['url'].startswith('https://'):
-                    conn = httplib.HTTPSConnection(srv['url'].strip('https://'))
-                else:
-                    conn = httplib.HTTPConnection(srv['url'].strip('http://'))
+                def request(server, method, url, auth=False):
+                    conn = None
+                    if server.startswith('https://'):
+                        conn = httplib.HTTPSConnection(server.strip('https://'))
+                    else:
+                        conn = httplib.HTTPConnection(server.strip('http://'))
+                    if auth:
+                        conn.request(method, url, headers={"Authorization": "Basic %s" % auth})
+                    else:
+                        conn.request(method, url)
+                    response = conn.getresponse()
+                    conn.close()
+                    return response
 
-                if 'auth' in srv.keys():
-                    conn.request("PUT", "/%s" % db, headers={"Authorization": "Basic %s" % srv['auth']})
-                else:
-                    conn.request("PUT", "/%s" % db)
-                conn.close()
+                request(srv['url'], 'PUT', "/%s" % db, srv.get('auth', False))
+
+                for doc in docs_list:
+                    docid = doc['_id']
+                    print docid
+
+                    # HEAD the doc
+                    head = request(srv['url'], 'HEAD', "/%s/%s" % (db, docid), srv.get('auth', False))
+                    # get its _rev, append _rev to the doc dict
+                    rev = head.getheader('etag', False).replace('"', '')
+                    if rev:
+                        doc['_rev'] = rev
 
                 req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
                 req.add_header("Content-Type", "application/json")
@@ -342,9 +359,10 @@ class Push(Command):
                 d = {}
                 for afile in files:
                     if '_attachments' in path:
-                        path.remove('_attachments')
-                        path.append(afile)
-                        attachments['/'.join(path)] = {
+                        tmp_path = list(path) # avoid overwriting the original path var
+                        tmp_path.remove('_attachments')
+                        tmp_path.append(afile)
+                        attachments['/'.join(tmp_path)] = {
                             'data': base64.encodestring(open(os.path.join(root, afile)).read()),
                             'content_type': mimetypes.guess_type(os.path.join(root, afile))[0]
                         }
@@ -420,7 +438,7 @@ class Create(Command):
         """
         Set up the sub_commands and the OptionParser.
         """
-        self._register([ View(), ListGen(), Show(), Design(), App(), Document() ])
+        self._register([ View(), ListGen(), Show(), Design(), App(), Document(), Html() ])
 
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid entities are: %s" % ", ".join(commands)
@@ -472,7 +490,11 @@ class Generator(Command):
         Run the generator
         """
         #self.process_args(args, options)
-        path = self._create_path(options.root, options.design, args[0])
+        path = None
+        if len(args):
+            path = self._create_path(options.root, options.design, args[0])
+        else:
+            path = self._create_path(options.root, options.design)
         self._push_template(path, args, options)
 
     def _create_path(self, root, design=[], name=None, misc=None):
@@ -483,12 +505,16 @@ class Generator(Command):
             path_elems =[root]
             if len(design) > 1:
                 path_elems.extend(design)
+
             if name:
                 if not self.path_elem:
                     self.path_elem = self.command_name
-                path_elems.extend([self.path_elem, name])
+            path_elems.extend([self.path_elem, name])
+
             if misc:
                 path_elems.extend(misc)
+
+            path_elems = [item for item in path_elems if item != None]
             path = os.path.join(*tuple(path_elems))
             self.logger.debug('Creating: %s' % path)
             if not os.path.exists(path):
@@ -522,7 +548,8 @@ class Generator(Command):
 
 class View(Generator):
     """
-    Create the files for a view.
+    Create the map.js and reduce.js files for a view. Can use built in erlang
+    reducers (faster) for the reduce.js (see options above).
     """
     command_name = "view"
     path_elem = "views"
@@ -581,29 +608,59 @@ class App(Generator):
     command_name = "app"
 
 class Document(Generator):
+    """
+    Create an empty json document (containing just an _id) in the _docs folder
+    of the application root.
+    """
     command_name = 'document'
+    path_elem = '_docs'
     _template = {'document': {}}
 
     def _add_options(self):
         self.parser.add_option("--name",
-                    dest="name", default=False,
+                    dest="name",
                     help="Name the document")
 
-    def run_command(self, args, options):
-        self._push_template(args, options)
-
-    def _push_template(self, args, options):
-        path = self._create_path(options.root, misc=['_docs'])
+    def _push_template(self, path, args, options):
+        path = self._create_path(options.root)
         file_name = str(uuid.uuid1())
         doc = self._template['document']
-        if options.name:
+        doc['_id'] = file_name
+        if options.ensure_value('name', False):
             doc['_id'] = options.name
             file_name = options.name
         doc_file = os.path.join(path, file_name)
 
         self._write_json(doc_file, doc)
 
+class Html(Document):
+    """
+    Create an empty html document in the _attachments folder of the specified
+    design document.
+    """
+    command_name = 'html'
+    path_elem = '_attachments'
+    _template = {
+        'document': '<html><head><title>REPLACE</title></head><body><h1>REPLACE</h1></body></html>'
+    }
+    required_opts = ['name']
+
+    def _add_options(self):
+        self.parser.add_option("--name",
+                    dest="name", help="Name the document")
+
+    def _push_template(self, path, args, options):
+        file_name = '%s.html' % options.name.replace('html', '')
+
+        doc = self._template['document'].replace('REPLACE', options.name.title())
+        doc_file = os.path.join(path, file_name)
+
+        self._write_file(doc_file, doc)
+
 def fetch_archive(url, path, filter_list=[]):
+    """
+    Fetch a remote tar/zip archive and extract it, applying a filter if one is provided.
+    """
     (filename, response) = urllib.urlretrieve(url)
     subfolder = ""
 
@@ -654,6 +711,8 @@ Package = namedtuple('Package', ['url', 'filter'])
 class Vendor(Generator):
     """
     Vendors are generators that download external code into the right place
+
+    TODO: run make/build commands as needed
     """
     command_name = "vendor"
     def run_command(self, args, options):
@@ -703,7 +762,7 @@ class d3(Vendor):
     """
     command_name = 'd3'
     _template = {
-        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', []),
+        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
     }
 
 if __name__ == "__main__":
