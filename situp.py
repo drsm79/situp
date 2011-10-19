@@ -311,8 +311,6 @@ class Push(Command):
 
                 for doc in docs_list:
                     docid = doc['_id']
-                    print docid
-
                     # HEAD the doc
                     head = request(srv['url'], 'HEAD', "/%s/%s" % (db, docid), srv.get('auth', False))
                     # get its _rev, append _rev to the doc dict
