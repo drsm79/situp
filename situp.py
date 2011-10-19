@@ -386,6 +386,7 @@ class Push(Command):
 
         apps_to_push = []
         attachments_to_push = []
+        # TODO: push docs here too.
         if os.path.exists(designs):
             for design in os.listdir(designs):
                 name = os.path.join('_design', design)
