@@ -366,7 +366,11 @@ class Push(Command):
                             'content_type': mimetypes.guess_type(os.path.join(root, afile))[0]
                         }
                     else:
-                        d[afile] = open(os.path.join(root, afile)).read()
+                        if path[0] == 'views':
+                            if afile in ['map.js', 'reduce.js']:
+                                d[afile.strip('.js')] = open(os.path.join(root, afile)).read()
+                        else:
+                            d[afile] = open(os.path.join(root, afile)).read()
                 app = recursive_update(app, reduce(nest, reversed(path), d))
 
         if attachments:
