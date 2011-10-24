@@ -263,10 +263,13 @@ class AddServer(Command):
 
 class Push(Command):
     """
-    The Push command sends the application to the CouchDB server.
+    The Push command sends the application to the CouchDB server. Specify a
+    design to push only a single design document, otherwise all designs in the
+    app will be pushed.
     """
     command_name = 'push'
     no_required_args = 0
+    ignored_files = ['.DS_Store'] #TODO pick this up from config
 
     def _add_options(self):
         """
@@ -334,11 +337,13 @@ class Push(Command):
         Walk through the design document, building a dictionary as it goes.
         """
 
+
         def nest(path_dict, path_elem):
             """
             Build the required nested data structure
             """
-            return {path_elem: path_dict}
+            if path_elem not in self.ignored_files:
+                return {path_elem: path_dict}
 
         def recursive_update(a_dict, b_dict):
             for k, v in b_dict.items():
@@ -355,6 +360,9 @@ class Push(Command):
             if files:
                 d = {}
                 for afile in files:
+
+                    if afile in self.ignored_files:
+                        continue
                     if '_attachments' in path:
                         tmp_path = list(path) # avoid overwriting the original path var
                         tmp_path.remove('_attachments')
@@ -364,7 +372,7 @@ class Push(Command):
                             'content_type': mimetypes.guess_type(os.path.join(root, afile))[0]
                         }
                     else:
-                        if path[0] == 'views':
+                        if len(path) > 0 and path[0] == 'views':
                             if afile in ['map.js', 'reduce.js']:
                                 d[afile.strip('.js')] = open(os.path.join(root, afile)).read()
                         else:
@@ -385,16 +393,19 @@ class Push(Command):
 
         docs = os.path.join(options.root, '_docs')
         designs = os.path.join(options.root, '_design')
-
         apps_to_push = []
         attachments_to_push = []
         # TODO: push docs here too.
         if os.path.exists(designs):
-            for design in os.listdir(designs):
-                name = os.path.join('_design', design)
-                root = os.path.join(designs, design)
-                app = self._walk_design(name,root)
-                apps_to_push.append(app)
+            list_of_designs = os.listdir(designs)
+            if len(options.design) > 1:
+                list_of_designs = [options.design[1]]
+            for design in list_of_designs:
+                if design not in self.ignored_files:
+                    name = os.path.join('_design', design)
+                    root = os.path.join(designs, design)
+                    app = self._walk_design(name,root)
+                    apps_to_push.append(app)
 
             saved_servers = {}
             servers_to_use = {}
@@ -435,6 +446,8 @@ class Create(Command):
                 help="Add created document to an index")
 
         Command._add_options(self)
+        commands = sorted(self.sub_commands.keys())
+        self.parser.epilog = "Valid entities are: %s" % ", ".join(commands)
 
     def register_sub_commands(self):
         """
@@ -457,22 +470,25 @@ class InstallVendor(Command):
                             "You can install vendors from non-standard "
                             "locations by specifying the URL on the command"
                             " line")
+
+        externals = {}
         for vendor in self.sub_commands.values():
-            for external, package in vendor._template.items():
-                group.add_option("--%s" % external, metavar="URL",
-                            dest="alt_%s" % external, default=False,
-                            help="Download %s from URL instead of the default [%s]"\
-                                % (external, package.url))
+            externals.update(vendor._template)
+        for external, package in externals.items():
+            group.add_option("--%s" % external, metavar="URL",
+                        dest="alt_%s" % external, default=False,
+                        help="Download %s from URL instead of the default [%s]"\
+                            % (external, package.url))
         self.parser.add_option_group(group)
+
+        commands = sorted(self.sub_commands.keys())
+        self.parser.epilog = "Valid vendors are: %s" % ", ".join(commands)
 
     def register_sub_commands(self):
         """
         Set up the sub_commands and the OptionParser.
         """
-        self._register([ Backbone(), d3() ])
-
-        commands = sorted(self.sub_commands.keys())
-        self.parser.epilog = "Valid vendors are: %s" % ", ".join(commands)
+        self._register([ Backbone(), d3(), BackboneCouchDB() ])
 
 class Generator(Command):
     """
@@ -665,7 +681,6 @@ def fetch_archive(url, path, filter_list=[]):
     """
     (filename, response) = urllib.urlretrieve(url)
     subfolder = ""
-
     if tarfile.is_tarfile(filename):
         tgz = tarfile.open(filename)
         to_extract = tgz.getmembers()
@@ -735,14 +750,26 @@ class Vendor(Generator):
 
 class Backbone(Vendor):
     """
-    Install Backbone
+    Install Backbone Couch
     """
     command_name = 'backbone'
     _template = {
         'backbone' : Package('https://github.com/documentcloud/backbone/zipball/master', ['backbone.js']),
-        'backbone.couch' : Package('https://github.com/mikewallace1979/backbone-couch/tarball/master', ['backbone.couch.js']),
+        'backbone.couch' : Package('https://github.com/drsm79/backbone-couch/tarball/master', ['backbone.couch.js']),
         'underscore' : Package('https://github.com/documentcloud/underscore/tarball/master', ['underscore-min.js'])
     }
+
+class BackboneCouchDB(Vendor):
+    """
+    Install Backbone CouchDB
+    """
+    command_name = 'backbonecouchdb'
+    _template = {
+        'backbone' : Package('https://github.com/documentcloud/backbone/zipball/master', ['backbone.js']),
+        'backbonecouchdb' : Package('https://github.com/janmonschke/backbone-couchdb/tarball/master', ['backbone-couchdb.js']),
+        'underscore' : Package('https://github.com/documentcloud/underscore/tarball/master', ['underscore-min.js'])
+    }
+
 
 class YUI(Vendor):
     """
