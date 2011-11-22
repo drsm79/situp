@@ -1,8 +1,11 @@
-What is a CouchApp
+About situp.py
+****************************************
+
+situp.py originally started out as an attempt to write a simplified CouchApp "client" that followed and reused the python distutils package, the idea being that distutils would take care of lots of the heavy lifting (and provide a few features "out of the box"). After a bit of tinkering it became fairly apparent that a lot of code would be necessary to override distutils behaviour. So now situp.py is just another CouchApp client.
+
+
+What is a CouchApp?
 ========================================
-Philosophy
-----------------------------------------
-A CouchApp is an application that runs directly out of CouchDB. It has no
-external server, the database provides data and user interface. The application
-may be built of one or more design documents (for example a design doc that
-provides authorisation and another that provides data for the user interface).
+
+My colleague Mike can probably `tell you better <https://github.com/mikewallace1979/CouchApp-Handbook>`_
+than I!
