@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
-    <link rel="prev" title="What is a CouchApp" href="whatisacouchapp.html" /> 
+    <link rel="prev" title="Project pages" href="externals.html" /> 
   </head>
   <body>
     <div class="related">
@@ -36,7 +36,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="whatisacouchapp.html" title="What is a CouchApp"
+          <a href="externals.html" title="Project pages"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
       </ul>
@@ -51,14 +51,20 @@
 <span id="situp-public-api"></span><h1>situp public API<a class="headerlink" href="#module-situp" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="situp.AddServer">
-<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">AddServer</tt><a class="headerlink" href="#situp.AddServer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">AddServer</tt><a class="reference internal" href="_modules/situp.html#AddServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.AddServer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a server to the servers.json file</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="situp.Backbone">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Backbone</tt><a class="reference internal" href="_modules/situp.html#Backbone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Backbone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Install Backbone</p>
+<dd><p>Install Backbone Couch</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.BackboneCouchDB">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">BackboneCouchDB</tt><a class="reference internal" href="_modules/situp.html#BackboneCouchDB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.BackboneCouchDB" title="Permalink to this definition">¶</a></dt>
+<dd><p>Install Backbone CouchDB</p>
 </dd></dl>
 
 <dl class="class">
@@ -109,6 +115,13 @@ App() and Document()</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="situp.Document">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Document</tt><a class="reference internal" href="_modules/situp.html#Document"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Document" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an empty json document (containing just an _id) in the _docs folder
+of the application root.</p>
+</dd></dl>
+
+<dl class="class">
 <dt id="situp.Evently">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Evently</tt><a class="reference internal" href="_modules/situp.html#Evently"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Evently" title="Permalink to this definition">¶</a></dt>
 <dd><p>Install Evently</p>
@@ -130,6 +143,14 @@ App() and Document()</p>
 <dd><p>Run the generator</p>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.Html">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Html</tt><a class="reference internal" href="_modules/situp.html#Html"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Html" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an empty html document in the _attachments folder of the specified
+design document.
+TODO: include script tags for all vendors in generated html.</p>
 </dd></dl>
 
 <dl class="class">
@@ -195,7 +216,9 @@ After, g=itemgetter(2,5,3), the call g(r) returns (r[2], r[5], r[3])</p>
 <dl class="class">
 <dt id="situp.Push">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Push</tt><a class="reference internal" href="_modules/situp.html#Push"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Push" title="Permalink to this definition">¶</a></dt>
-<dd><p>The Push command sends the application to the CouchDB server.</p>
+<dd><p>The Push command sends the application to the CouchDB server. Specify a
+design to push only a single design document, otherwise all designs in the
+app will be pushed.</p>
 <dl class="method">
 <dt id="situp.Push.run_command">
 <tt class="descname">run_command</tt><big>(</big><em>args</em>, <em>options</em><big>)</big><a class="reference internal" href="_modules/situp.html#Push.run_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Push.run_command" title="Permalink to this definition">¶</a></dt>
@@ -221,6 +244,7 @@ CouchDB</p>
 <dt id="situp.Vendor">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Vendor</tt><a class="reference internal" href="_modules/situp.html#Vendor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Vendor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Vendors are generators that download external code into the right place</p>
+<p>TODO: run make/build commands as needed</p>
 <dl class="method">
 <dt id="situp.Vendor.run_command">
 <tt class="descname">run_command</tt><big>(</big><em>args</em>, <em>options</em><big>)</big><a class="reference internal" href="_modules/situp.html#Vendor.run_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Vendor.run_command" title="Permalink to this definition">¶</a></dt>
@@ -232,13 +256,26 @@ CouchDB</p>
 <dl class="class">
 <dt id="situp.View">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">View</tt><a class="reference internal" href="_modules/situp.html#View"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.View" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create the files for a view.</p>
+<dd><p>Create the map.js and reduce.js files for a view. Can use built in erlang
+reducers (faster) for the reduce.js (see options above).</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="situp.YUI">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">YUI</tt><a class="reference internal" href="_modules/situp.html#YUI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.YUI" title="Permalink to this definition">¶</a></dt>
 <dd><p>Install YUI</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="situp.d3">
+<em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">d3</tt><a class="reference internal" href="_modules/situp.html#d3"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.d3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Install d3</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="situp.fetch_archive">
+<tt class="descclassname">situp.</tt><tt class="descname">fetch_archive</tt><big>(</big><em>url</em>, <em>path</em>, <em>filter_list=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="reference internal" href="_modules/situp.html#fetch_archive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.fetch_archive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch a remote tar/zip archive and extract it, applying a filter if one is provided.</p>
 </dd></dl>
 
 </div>
@@ -250,8 +287,8 @@ CouchDB</p>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="whatisacouchapp.html"
-                        title="previous chapter">What is a CouchApp</a></p>
+  <p class="topless"><a href="externals.html"
+                        title="previous chapter">Project pages</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/code.txt"
@@ -284,7 +321,7 @@ CouchDB</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="whatisacouchapp.html" title="What is a CouchApp"
+          <a href="externals.html" title="Project pages"
              >previous</a> |</li>
         <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
       </ul>
