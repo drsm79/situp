@@ -269,7 +269,9 @@ class Push(Command):
     """
     command_name = 'push'
     no_required_args = 0
-    ignored_files = ['.DS_Store'] #TODO pick this up from config
+    #TODO pick this up from config
+    #TODO support regexp
+    ignored_files = ['.DS_Store', '.cvs', '.svn', '.hg', '.git']
 
     def _add_options(self):
         """
@@ -357,11 +359,15 @@ class Push(Command):
         app = {'_id': name}
         for root, dirs, files in os.walk(design):
             path = root.split(name)[1].split('/')[1:]
+            for walkeddir in dirs:
+                if walkeddir in self.ignored_files:
+                    print 'ignoring %s' % os.path.join(root, walkeddir)
+                    dirs.remove(walkeddir)
             if files:
                 d = {}
                 for afile in files:
-
                     if afile in self.ignored_files:
+                        print 'ignoring %s' % afile
                         continue
                     if '_attachments' in path:
                         tmp_path = list(path) # avoid overwriting the original path var
@@ -377,7 +383,8 @@ class Push(Command):
                                 d[afile.strip('.js')] = open(os.path.join(root, afile)).read()
                         else:
                             d[afile] = open(os.path.join(root, afile)).read()
-                app = recursive_update(app, reduce(nest, reversed(path), d))
+                if d.keys():
+                    app = recursive_update(app, reduce(nest, reversed(path), d))
 
         if attachments:
             app['_attachments'] = attachments
@@ -395,6 +402,20 @@ class Push(Command):
         designs = os.path.join(options.root, '_design')
         apps_to_push = []
         attachments_to_push = []
+
+        saved_servers = {}
+        servers_to_use = {}
+        if os.path.exists('servers.json'):
+            saved_servers = json.load(open('servers.json'))
+
+            for server in options.servers:
+                if server in saved_servers.keys():
+                    servers_to_use[server] = saved_servers[server]
+                else:
+                    servers_to_use[server] = {"url": server}
+
+            self._push_docs(apps_to_push, options.database, servers_to_use)
+
         # TODO: push docs here too.
         if os.path.exists(designs):
             list_of_designs = os.listdir(designs)
@@ -407,19 +428,14 @@ class Push(Command):
                     app = self._walk_design(name,root)
                     apps_to_push.append(app)
 
-            saved_servers = {}
-            servers_to_use = {}
-            if os.path.exists('servers.json'):
-                saved_servers = json.load(open('servers.json'))
-
-            for server in options.servers:
-                if server in saved_servers.keys():
-                    servers_to_use[server] = saved_servers[server]
-                else:
-                    servers_to_use[server] = {"url": server}
-
-            self._push_docs(apps_to_push, options.database, servers_to_use)
-            # push attachments
+		if os.path.exists('_docs'):
+			docs_to_push = []
+			for jsonfile in docs:
+				# do something to check it's json
+				f = open('_docs/%s' % jsonfile)
+				docs_to_push.append(json.load(f))
+				f.close()
+			self._push_docs(docs_to_push, options.database, servers_to_use)
 
 class Fetch(Command):
     """
@@ -585,9 +601,9 @@ class View(Generator):
         Allow for using a built in reduce.
         """
         self.parser.add_option("--builtin-reduce",
-                    dest="built_in", default=False,
-                    choices=['sum', 'count', 'stats'],
-                    help="Use a built in reduce (one of sum, count, stats)")
+                            dest="built_in", default=False,
+                            choices=['sum', 'count', 'stats'],
+                            help="Use a built in reduce (one of sum, count, stats)")
 
         for reducer in ['sum', 'count', 'stats']:
             self.parser.add_option("--%s" % reducer,
@@ -603,7 +619,6 @@ class View(Generator):
         """
         reduce_file = os.path.join(path, 'reduce.js')
         map_file = os.path.join(path, 'map.js')
-
         self._write_file(map_file, self._template['map.js'])
         if options.built_in:
             self._write_file(reduce_file, '_%s' % options.built_in)
@@ -655,6 +670,7 @@ class Html(Document):
     """
     Create an empty html document in the _attachments folder of the specified
     design document.
+    TODO: include script tags for all vendors in generated html.
     """
     command_name = 'html'
     path_elem = '_attachments'
