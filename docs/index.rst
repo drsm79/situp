@@ -16,6 +16,8 @@ Contents:
    whatisacouchapp
    code
 
+`Project kanban board <http://mikewallace.cloudant.com/situp-kanban/_design/kanbancouch/index.html>`_
+
 Indices and tables
 ==================
 
