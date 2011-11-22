@@ -794,13 +794,6 @@ class YUI(Vendor):
     command_name = 'yui'
     _template = {}
 
-class Evently(Vendor):
-    """
-    Install Evently
-    """
-    command_name = 'evently'
-    _template = {}
-
 class d3(Vendor):
     """
     Install d3
