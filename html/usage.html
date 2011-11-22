@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
-    <link rel="next" title="Features of situp.py" href="plan.html" />
+    <link rel="next" title="What is a CouchApp" href="whatisacouchapp.html" />
     <link rel="prev" title="Welcome to documentation for situp.py!" href="index.html" /> 
   </head>
   <body>
@@ -37,7 +37,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="plan.html" title="Features of situp.py"
+          <a href="whatisacouchapp.html" title="What is a CouchApp"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to documentation for situp.py!"
@@ -55,55 +55,65 @@
 <h1>Using situp.py<a class="headerlink" href="#using-situp-py" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="creating-a-view">
 <h2>Creating a view<a class="headerlink" href="#creating-a-view" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>::</dt>
-<dd>situp.py -d tst-app create view foo</dd>
-</dl>
-<p>Will create a view called foo in tst-app ($PWD/_design/tst-app) with empty map
-and reduce files.</p>
-<dl class="docutils">
-<dt>::</dt>
-<dd>situp.py -d tst-app create view bar &#8211;sum</dd>
-</dl>
+<p>situp.py will create a view called foo in tst-app ($PWD/_design/tst-app) with
+empty functions in the map.js and reduce.js files.:</p>
+<div class="highlight-python"><pre>situp.py -d tst-app create view foo</pre>
+</div>
 <p>Will create a view called bar in tst-app ($PWD/_design/tst-app) with an empty
-map.js and a _sum built in reduce.</p>
-<dl class="docutils">
-<dt>::</dt>
-<dd>situp.py create view baz</dd>
-</dl>
+function in map.js and a _sum built in reduce.:</p>
+<div class="highlight-python"><pre>situp.py -d tst-app create view bar --sum</pre>
+</div>
 <p>Will create the view baz in the views directory of the current working dir
-(e.g. $PWD/views/baz)</p>
+(e.g. $PWD/views/baz):</p>
+<div class="highlight-python"><pre>situp.py create view baz</pre>
+</div>
 </div>
 <div class="section" id="importing-a-vendor">
 <h2>Importing a vendor<a class="headerlink" href="#importing-a-vendor" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>::</dt>
-<dd>situp.py -d tst-app vendor backbone</dd>
-</dl>
+<p>Vendors can be imported into the application via:</p>
+<div class="highlight-python"><pre>situp.py -d tst-app vendor backbone</pre>
+</div>
 <p>Will download and install the vendor backbone and its dependencies into the
-tst-app design.</p>
+tst-app design. Supported vendors are:</p>
+<ul class="simple">
+<li>Backbone (both flavours)</li>
+<li>d3</li>
+<li>YUI (soon...)</li>
+</ul>
+<p>Adding a vendor to situp.py should be simple, for instance the d3 vendor looks like</p>
+<div class="highlight-python"><pre>class d3(Vendor):
+"""
+    Install d3
+    """
+    command_name = 'd3'
+    _template = {
+        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
+    }</pre>
+</div>
 </div>
 <div class="section" id="defining-servers">
 <h2>Defining servers<a class="headerlink" href="#defining-servers" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>::</dt>
-<dd>situp.py addserver -n dev -s <a class="reference external" href="http://localhost:5984">http://localhost:5984</a></dd>
-</dl>
+<p>situp.py lets you define servers so you can interact with them by name instead
+of URL:</p>
+<div class="highlight-python"><pre>situp.py addserver -n dev -s http://localhost:5984</pre>
+</div>
 <p>This creates a servers.json file in the current directory and stores the server
-name, url and auth token in there. <em>DO NOT</em> make your servers.json file public
+name, url and auth token in there. <strong>DO NOT</strong> make your servers.json file public
 since people will be able to access your couch instances.</p>
 </div>
 <div class="section" id="pushing-to-a-set-of-servers">
-<h2>Pushing to a set of servers<a class="headerlink" href="#pushing-to-a-set-of-servers" title="Permalink to this headline">¶</a></h2>
-<dl class="docutils">
-<dt>::</dt>
-<dd>situp.py -d tst-app push -s <a class="reference external" href="http://localhost:5984">http://localhost:5984</a> -d databasename</dd>
-</dl>
+<h2>Pushing to a (set of) servers<a class="headerlink" href="#pushing-to-a-set-of-servers" title="Permalink to this headline">¶</a></h2>
+<p>Pushing an application to a server is as simple as running:</p>
+<div class="highlight-python"><pre>situp.py -d tst-app push -s http://localhost:5984 -d databasename</pre>
+</div>
 <p>The -s option can be specified multiple times.</p>
 <p>If a server has been defined (see above) you can refer to it via it&#8217;s short
 name:</p>
 <div class="highlight-python"><pre>situp.py -d tst-app push -s dev -d databasename</pre>
 </div>
+<p>If a server URL has a username in it (e.g. <a class="reference external" href="mailto:joe&#37;&#52;&#48;localhost">joe<span>&#64;</span>localhost</a>:5984) situp.py will
+ask for a password. This won&#8217;t be stored anywhere and will not be in the shell
+history.</p>
 </div>
 </div>
 
@@ -119,7 +129,7 @@ name:</p>
 <li><a class="reference internal" href="#creating-a-view">Creating a view</a></li>
 <li><a class="reference internal" href="#importing-a-vendor">Importing a vendor</a></li>
 <li><a class="reference internal" href="#defining-servers">Defining servers</a></li>
-<li><a class="reference internal" href="#pushing-to-a-set-of-servers">Pushing to a set of servers</a></li>
+<li><a class="reference internal" href="#pushing-to-a-set-of-servers">Pushing to a (set of) servers</a></li>
 </ul>
 </li>
 </ul>
@@ -128,8 +138,8 @@ name:</p>
   <p class="topless"><a href="index.html"
                         title="previous chapter">Welcome to documentation for situp.py!</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="plan.html"
-                        title="next chapter">Features of situp.py</a></p>
+  <p class="topless"><a href="whatisacouchapp.html"
+                        title="next chapter">What is a CouchApp</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/usage.txt"
@@ -162,7 +172,7 @@ name:</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="plan.html" title="Features of situp.py"
+          <a href="whatisacouchapp.html" title="What is a CouchApp"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to documentation for situp.py!"

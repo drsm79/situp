@@ -11,7 +11,6 @@ Welcome to documentation for situp.py!
    :maxdepth: 2
 
    usage
-   plan
    whatisacouchapp
    externals
    code
