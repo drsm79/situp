@@ -3,10 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to situp's documentation!
+Welcome to documentation for situp.py!
 =================================
 
-Contents:
 
 .. toctree::
    :maxdepth: 2
@@ -14,9 +13,8 @@ Contents:
    usage
    plan
    whatisacouchapp
+   externals
    code
-
-`Project kanban board <http://mikewallace.cloudant.com/situp-kanban/_design/kanbancouch/index.html>`_
 
 Indices and tables
 ==================
