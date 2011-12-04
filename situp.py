@@ -414,9 +414,7 @@ class Push(Command):
                 else:
                     servers_to_use[server] = {"url": server}
 
-            self._push_docs(apps_to_push, options.database, servers_to_use)
-
-        # TODO: push docs here too.
+       # TODO: push docs here too.
         if os.path.exists(designs):
             list_of_designs = os.listdir(designs)
             if len(options.design) > 1:
@@ -427,6 +425,8 @@ class Push(Command):
                     root = os.path.join(designs, design)
                     app = self._walk_design(name,root)
                     apps_to_push.append(app)
+
+		self._push_docs(apps_to_push, options.database, servers_to_use)
 
 		if os.path.exists('_docs'):
 			docs_to_push = []
