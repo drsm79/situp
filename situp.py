@@ -391,6 +391,21 @@ class Push(Command):
 
         return app
 
+    def _process_url(self, url):
+        """ Extract auth credentials from url, if present """
+        protocol, uri = url.split("//")
+        auth = uri.split("@")
+        if len(auth) == 1:
+            return url, None
+        credentials, location = auth
+        url = "%s//%s" % (protocol,location)
+        if ":" in credentials:
+            return url, "%s" % base64.encodestring(credentials).strip()
+        else:
+            username = credentials
+            return url, "%s" % base64.encodestring('%s:%s' % (
+                                           username, getpass.getpass())).strip()
+
     def run_command(self, args, options):
         """
         Build a python dictionary of the application, jsonise it and push it to
@@ -412,9 +427,12 @@ class Push(Command):
                 if server in saved_servers.keys():
                     servers_to_use[server] = saved_servers[server]
                 else:
-                    servers_to_use[server] = {"url": server}
+                    url, auth = self._process_url(server)
+                    servers_to_use[server] = {"url": url}
+                    if auth:
+                        servers_to_use[server]["auth"] = auth
 
-       # TODO: push docs here too.
+        # TODO: push docs here too.
         if os.path.exists(designs):
             list_of_designs = os.listdir(designs)
             if len(options.design) > 1:
