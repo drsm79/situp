@@ -14,7 +14,7 @@ import mimetypes
 import getpass
 from optparse import OptionParser, OptionGroup
 from collections import defaultdict, namedtuple
-from urlparse import urlunparse
+from urlparse import urlunparse, urlparse
 from httplib import HTTPConnection
 from httplib import HTTPSConnection
 from httplib import HTTPException
@@ -391,6 +391,19 @@ class Push(Command):
 
         return app
 
+    def _process_url(self, url):
+        """ Extract auth credentials from url, if present """
+        parts = urlparse(url)
+        if not parts.username and not parts.password:
+            return url, None
+        netloc = '%s:%s' % (parts.hostname, parts.port)
+        url = urlunparse((parts.scheme, netloc, parts.path, parts.params, parts.query, parts.fragment))
+        if parts.username and parts.password:
+            return url, "%s" % base64.encodestring('%s:%s' % (parts.username, parts.password)).strip()
+        else:
+            return url, "%s" % base64.encodestring('%s:%s' % (
+                                           parts.username, getpass.getpass())).strip()
+
     def run_command(self, args, options):
         """
         Build a python dictionary of the application, jsonise it and push it to
@@ -412,9 +425,10 @@ class Push(Command):
                 if server in saved_servers.keys():
                     servers_to_use[server] = saved_servers[server]
                 else:
-                    servers_to_use[server] = {"url": server}
-
-            self._push_docs(apps_to_push, options.database, servers_to_use)
+                    url, auth = self._process_url(server)
+                    servers_to_use[server] = {"url": url}
+                    if auth:
+                        servers_to_use[server]["auth"] = auth
 
         # TODO: push docs here too.
         if os.path.exists(designs):
@@ -427,6 +441,8 @@ class Push(Command):
                     root = os.path.join(designs, design)
                     app = self._walk_design(name,root)
                     apps_to_push.append(app)
+
+		self._push_docs(apps_to_push, options.database, servers_to_use)
 
 		if os.path.exists('_docs'):
 			docs_to_push = []
