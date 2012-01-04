@@ -804,7 +804,7 @@ class FetchVendors(Generator):
     """
     command_name = "vendor"
 
-    def install_external(self, external, options, installed):
+    def install_external(self, external, options):
         """ Install external """
         path = self._create_path(options.root,
                                 options.design,
@@ -819,8 +819,8 @@ class FetchVendors(Generator):
                 len(package['versions'][latest]['dependencies']) > 0:
             self.logger.info('Fetching dependencies for %s' % external)
             for dep in package['versions'][latest]['dependencies'].keys():
-                if dep not in installed:
-                    self.install_external(dep, options, installed)
+                if dep not in os.listdir('vendor'):
+                    self.install_external(dep, options)
         archive = "%s-%s.tar.gz" % (external, latest)
         fetch_archive(url + '/' + archive, path)
         self.logger.info("Installed %s to %s" % (external, path))
@@ -830,11 +830,10 @@ class FetchVendors(Generator):
         Vendors behave differently to other generators
         """
         self.logger.warning("Fetching externals, may take a while")
-        installed = os.listdir('vendor')
         # bit of a hack...
         self.command_name = ""
         for external in args:
-            self.install_external(external, options, installed)
+            self.install_external(external, options)
 
 
 if __name__ == "__main__":
