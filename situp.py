@@ -803,25 +803,41 @@ class FetchVendors(Generator):
     correctly built.
     """
     command_name = "vendor"
+
+    def install_external(self, external, options, installed):
+        """ Install external """
+        path = self._create_path(options.root,
+                                options.design,
+                                'vendor/%s' % external)
+        self.logger.debug('Installing %s into %s' % (external, path))
+        # TODO: catch not founds etc
+        url = "http://kan.so/repository/%s" % external
+        (filename, response) = urllib.urlretrieve(url)
+        package = json.load(open(filename))
+        latest = package['tags']['latest']
+        if 'dependencies' in package['versions'][latest] and\
+                len(package['versions'][latest]['dependencies']) > 0:
+            self.logger.info('Fetching dependencies for %s' % external)
+            for dep in package['versions'][latest]['dependencies'].keys():
+                if dep not in installed:
+                    self.install_external(dep, options, installed)
+        archive = "%s-%s.tar.gz" % (external, latest)
+        fetch_archive(url + '/' + archive, path)
+        self.logger.info("Installed %s to %s" % (external, path))
+
     def run_command(self, args, options):
         """
         Vendors behave differently to other generators
         """
         self.logger.warning("Fetching externals, may take a while")
+        installed = os.listdir('vendor')
         # bit of a hack...
         self.command_name = ""
         for external in args:
-            path = self._create_path(options.root,
-                                    options.design,
-                                    'vendor/%s' % external)
-            self.logger.debug('Installing %s into %s' % (external, path))
-            # TODO: catch not founds etc
-            url = "http://kan.so/repository/%s" % external
-            (filename, response) = urllib.urlretrieve(url)
-            package = json.load(open(filename))
-            archive = "%s-%s.tar.gz" % (external, package['tags']['latest'])
-            fetch_archive(url + '/' + archive, path)
-            self.logger.info("Installed %s to %s" % (external, path))
+            if external not in installed:
+                self.install_external(external, options, installed)
+            else:
+                self.logger.info("External %s already installed" % external)
 
 
 if __name__ == "__main__":
