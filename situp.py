@@ -834,10 +834,7 @@ class FetchVendors(Generator):
         # bit of a hack...
         self.command_name = ""
         for external in args:
-            if external not in installed:
-                self.install_external(external, options, installed)
-            else:
-                self.logger.info("External %s already installed" % external)
+            self.install_external(external, options, installed)
 
 
 if __name__ == "__main__":
