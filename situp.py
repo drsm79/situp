@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import base64
 import json
 import httplib
@@ -18,6 +19,14 @@ from urlparse import urlunparse, urlparse
 from httplib import HTTPConnection
 from httplib import HTTPSConnection
 from httplib import HTTPException
+
+CAN_MINIFY_JS = False
+
+try:
+    from minify import jsmin
+    CAN_MINIFY_JS = True
+except:
+    pass
 
 __version__ = 0.1
 
@@ -115,6 +124,7 @@ class Command:
         """
         Add options to the command's option parser
         """
+        # TODO: Simplify/generalise this so commands have their own group        
         group = OptionGroup(self.parser, "Base options", "")
 
         group.add_option("--quiet",
@@ -213,7 +223,19 @@ class SitUp(Command):
         """
         Register my commands
         """
-        sub_commands = [Create(), InstallVendor(), Push(), Fetch(), AddServer()]
+        sub_commands = [
+            View(),
+            ListGen(),
+            Show(),
+            Design(),
+            App(),
+            Document(),
+            Html(),
+            InstallVendor(),
+            Push(),
+            Fetch(),
+            AddServer()
+        ]
         self._register(sub_commands)
 
 LocatedFile = namedtuple('LocatedFile', ['path', 'filename'])
@@ -277,17 +299,24 @@ class Push(Command):
         """
         Give the OptionParser additional options
         """
-        #Create commands can add the created documents to an index
-        self.parser.add_option("-o", "--open",
+        about =  "Options available to the push command."
+        group = OptionGroup(self.parser, "Push options", about)
+        group.add_option("-o", "--open",
                 dest="open_app",
                 action="store_true", default=False,
                 help="Once pushed, open the application")
-        self.parser.add_option("-s", "--server",
+        group.add_option("-s", "--server",
                 dest="servers", default=[], action='append',
                 help="Push the app to one or more servers (multiple -s options are allowed)")
-        self.parser.add_option('-d', '--database', dest='database',
+        group.add_option('-d', '--database', dest='database',
                 help='the database to write to.')
+        if CAN_MINIFY_JS:
+            self.parser.add_option("-m", "--minify",
+                dest="minify", default=False, action="store_true",
+                help="Minify javascript before pushing to database")
+        
         Command._add_options(self)
+        self.parser.add_option_group(group)
 
     def _push_docs(self, docs_list, db, servers):
         """
@@ -296,7 +325,7 @@ class Push(Command):
         """
         for server in servers.keys():
             srv = servers[server]
-            print 'upload to %s (%s/%s)' % (server, srv['url'], db)
+            self.logger.info('upload to %s (%s/%s)' % (server, srv['url'], db))
             try:
                 def request(server, method, url, auth=False):
                     conn = None
@@ -334,7 +363,7 @@ class Push(Command):
                 print "upload to %s failed" % server
                 print e
 
-    def _walk_design(self, name, design):
+    def _walk_design(self, name, design, options):
         """
         Walk through the design document, building a dictionary as it goes.
         """
@@ -373,14 +402,24 @@ class Push(Command):
                         tmp_path = list(path) # avoid overwriting the original path var
                         tmp_path.remove('_attachments')
                         tmp_path.append(afile)
+                        mime = mimetypes.guess_type(os.path.join(root, afile))[0]
+                        if options.minify and mime == "application/javascript":
+                            try:
+                                mini = jsmin(open(os.path.join(root, afile)).read())
+                                data = base64.encodestring(mini)
+                            except:
+                                self.logger.debug("Could not minify %s, uploading expanded version" % afile)
+                                data = base64.encodestring(open(os.path.join(root, afile)).read())
+                        else:
+                            data = base64.encodestring(open(os.path.join(root, afile)).read())
+                            
                         attachments['/'.join(tmp_path)] = {
-                            'data': base64.encodestring(open(os.path.join(root, afile)).read()),
-                            'content_type': mimetypes.guess_type(os.path.join(root, afile))[0]
+                            'data': data,
+                            'content_type': mime
                         }
                     else:
-                        if len(path) > 0 and path[0] == 'views':
-                            if afile in ['map.js', 'reduce.js']:
-                                d[afile.strip('.js')] = open(os.path.join(root, afile)).read()
+                        if len(path) > 0 and path[0] in ['views', 'lists', 'shows']:
+                            d[afile.strip('.js')] = open(os.path.join(root, afile)).read()
                         else:
                             d[afile] = open(os.path.join(root, afile)).read()
                 if d.keys():
@@ -439,7 +478,7 @@ class Push(Command):
                 if design not in self.ignored_files:
                     name = os.path.join('_design', design)
                     root = os.path.join(designs, design)
-                    app = self._walk_design(name,root)
+                    app = self._walk_design(name, root, options)
                     apps_to_push.append(app)
 
 		self._push_docs(apps_to_push, options.database, servers_to_use)
@@ -700,9 +739,9 @@ class Html(Document):
                     dest="name", help="Name the document")
 
     def _push_template(self, path, args, options):
-        file_name = '%s.html' % options.name.replace('html', '')
+        file_name = '%s.html' % options.name.split('.htm')[0]
 
-        doc = self._template['document'].replace('REPLACE', options.name.title())
+        doc = self._template['document'].replace('REPLACE', options.name.split('.htm')[0].title())
         doc_file = os.path.join(path, file_name)
 
         self._write_file(doc_file, doc)
@@ -817,6 +856,15 @@ class d3(Vendor):
     command_name = 'd3'
     _template = {
         'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
+    }
+
+class jQuery(Vendor):
+    """
+    Install jQuery
+    """
+    command_name = 'jquery'
+    _template = {
+        'jquery' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
     }
 
 if __name__ == "__main__":

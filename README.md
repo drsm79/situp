@@ -9,6 +9,11 @@ that a lot of code would be necessary to override distutils behaviour. So now
 situp.py is just another CouchApp client (and an excuse to experiment with a
 few things).
 
+A key feature of situp is that it's only dependency is python - this makes it 
+easy to use in automated test/install situations. If you don't want to use 
+minification it's a single file.
+
+
 Documentation
 ----------------------------------------
 
