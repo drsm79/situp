@@ -25,22 +25,8 @@ Vendors can be imported into the application via: ::
 	situp.py -d tst-app vendor backbone
 
 Will download and install the vendor backbone and its dependencies into the
-tst-app design. Supported vendors are:
-
-* Backbone (both flavours)
-* d3
-* YUI (soon...)
-
-Adding a vendor to situp.py should be simple, for instance the d3 vendor looks like ::
-
-	class d3(Vendor):
-    	"""
-	    Install d3
-	    """
-	    command_name = 'd3'
-	    _template = {
-	        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
-	    }
+tst-app design. situp uses the kanso packages, so anything that is available on
+http://kan.so/packages/ should work with situp.
 
 Defining servers
 ----------------------------------------
