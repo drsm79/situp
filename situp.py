@@ -40,7 +40,7 @@ class Command:
     required_opts = []
     dependencies = []
     usage = "usage: %prog [options] COMMAND [options] [args]"
-
+    
     def __init__(self):
         """
         Initialise the logger and OptionParser for the Command.
@@ -48,28 +48,28 @@ class Command:
         logging.basicConfig()
         self.logger = logging.getLogger('situp-%s' % self.command_name)
         self.logger.setLevel(logging.DEBUG)
-
+        
         self.sub_commands = {}
         # Need to deal with competing OptionParsers...
         self.parser = OptionParser()
         self.parser.disable_interspersed_args()
         self.register_sub_commands()
         self.parser.set_usage(self.usage)
-
+        
         self.parser.epilog = " ".join(str(self.__doc__).split())
         self._add_options()
-
+    
     def __call__(self, args=None, options=None):
         """
         Set up the logger, work out if I should print help or call the command.
         """
         (options, args) = self.process_args(args, options)
         self.configure_logger(options)
-
+        
         self.logger.debug('called')
         self.logger.debug(args)
         self.logger.debug(options)
-
+        
         if options.cmd_help:
             # call the print_help function for the command and exit
             if len(args) and args[0] in self.sub_commands.keys():
@@ -83,10 +83,10 @@ class Command:
                                     args[0] not in self.sub_commands.keys():
             self.exit_invalid("You must specify a valid command.")
         self.run_command(args, options)
-
+    
     def run_command(self, args=None, options=None):
         self.sub_commands[args[0]](args[1:], options)
-
+    
     def process_args(self, args=None, options=None):
         """
         Process the option parser, updating it with data from parent parser
@@ -99,7 +99,7 @@ class Command:
             (options, args) = self.parser.parse_args(args=args)
         else:
             (options, args) = self.parser.parse_args()
-
+        
         die = False
         for option in self.required_opts:
             if options.ensure_value(option, 'NOTSET') == 'NOTSET':
@@ -109,7 +109,7 @@ class Command:
             print 'Run command with -h/--help for further information'
             sys.exit(1)
         return options, args
-
+    
     def configure_logger(self, options):
         if options.quiet:
             self.logger.setLevel(logging.WARNING)
@@ -119,44 +119,44 @@ class Command:
             self.logger.setLevel(logging.DEBUG)
         else:
             self.logger.setLevel(logging.INFO)
-
+    
     def _add_options(self):
         """
         Add options to the command's option parser
         """
         # TODO: Simplify/generalise this so commands have their own group
         group = OptionGroup(self.parser, "Base options", "")
-
+        
         group.add_option("--quiet",
                     action="store_true", dest="quiet", default=False,
                     help="reduce messages going to stdout")
-
+        
         group.add_option("--debug",
                     action="store_true", dest="debug", default=False,
                     help="print extra messages to stdout")
-
+        
         group.add_option("--silent",
                     action="store_true", dest="silent", default=False,
                     help="print no messages to stdout")
-
+        
         group.add_option("--version",
                     action="store_true", dest="version", default=False,
                     help="print situp.py version and exit")
-
+        
         group.add_option("--cmd-help",
                     metavar="COMMAND",
                     dest="cmd_help",
                     action="store_true",default=False,
                     help="print help for the named command")
-
+        
         self.parser.add_option_group(group)
-
+    
     def register_sub_commands(self):
         """
         This is a dummy method for subclasses to fill in
         """
         pass
-
+    
     def _register(self, commands, usage=False):
         """
         Initialise subcommand classes for the command and update the optparser
@@ -167,20 +167,20 @@ class Command:
             self.usage = "usage: %prog " + self.command_name
             self.usage += " [%s]" %  '|'.join(self.sub_commands.keys())
             self.usage += " [options] [args]"
-
+    
     def print_help(self, args):
         """
         Encapsulate the Command's option parser's print_help() method here in
         case there's some reason to override it.
-
+        
         parser.print_help() actually prints to the screen, so just run that.
         """
-
+        
         if len(args) > 1 and args[1] in self.sub_commands.keys():
             self.sub_commands[args[1]].print_help(args[2:])
         self.parser.print_help()
         sys.exit(0)
-
+    
     def exit_invalid(self, msg):
         """
         The command doesn't exist so bail
@@ -197,7 +197,7 @@ class SitUp(Command):
     def _add_options(self):
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid commands are: %s" % ", ".join(commands)
-
+        
         # This is the important bit
         group = OptionGroup(self.parser, "Situp options", "Situp allows you to"
                     " have multiple design documents in your application via"
@@ -210,15 +210,15 @@ class SitUp(Command):
                     default=['_design'],
                     action='append',
                     help="modify the design document DESIGN")
-
+        
         pwd = os.getcwd()
         group.add_option("-r", "--root",
                     dest="root", default=pwd,
                     help="Application root directory, default is %s" % pwd)
-
+        
         self.parser.add_option_group(group)
         Command._add_options(self)
-
+    
     def register_sub_commands(self):
         """
         Register my commands
@@ -246,7 +246,7 @@ class AddServer(Command):
     """
     command_name = 'addserver'
     required_opts = ['name', 'server']
-
+    
     def _add_options(self):
         """
         Give the OptionParser additional options
@@ -261,7 +261,7 @@ class AddServer(Command):
         #        dest="servers", default=[], action='append',
         #        help="Push the app to one or more servers (multiple -s options are allowed)")
         Command._add_options(self)
-
+    
     def process_args(self, args=None, options=None):
         options, args = Command.process_args(self, args, options)
         username = raw_input('Username for server, press enter for no user/password auth:')
@@ -269,7 +269,7 @@ class AddServer(Command):
             options.auth_string = "%s" % base64.encodestring('%s:%s' % (
                                            username, getpass.getpass())).strip()
         return options, args
-
+    
     def run_command(self, args, options):
         servers = {}
         if os.path.exists('servers.json'):
@@ -294,7 +294,7 @@ class Push(Command):
     #TODO pick this up from config
     #TODO support regexp
     ignored_files = ['.DS_Store', '.cvs', '.svn', '.hg', '.git']
-
+    
     def _add_options(self):
         """
         Give the OptionParser additional options
@@ -314,10 +314,10 @@ class Push(Command):
             self.parser.add_option("-m", "--minify",
                 dest="minify", default=False, action="store_true",
                 help="Minify javascript before pushing to database")
-
+        
         Command._add_options(self)
         self.parser.add_option_group(group)
-
+    
     def _push_docs(self, docs_list, db, servers):
         """
         Push dictionaries into json docs in the server
@@ -340,9 +340,9 @@ class Push(Command):
                     response = conn.getresponse()
                     conn.close()
                     return response
-
+                
                 request(srv['url'], 'PUT', "/%s" % db, srv.get('auth', False))
-
+                
                 for doc in docs_list:
                     docid = doc['_id']
                     # HEAD the doc
@@ -350,7 +350,7 @@ class Push(Command):
                     # get its _rev, append _rev to the doc dict
                     if head.getheader('etag', False):
                         doc['_rev'] = head.getheader('etag', False).replace('"', '')
-
+                
                 req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
                 req.add_header("Content-Type", "application/json")
                 if 'auth' in srv.keys():
@@ -362,20 +362,20 @@ class Push(Command):
             except Exception, e:
                 print "upload to %s failed" % server
                 print e
-
+    
     def _walk_design(self, name, design, options):
         """
         Walk through the design document, building a dictionary as it goes.
         """
 
-
+        
         def nest(path_dict, path_elem):
             """
             Build the required nested data structure
             """
             if path_elem not in self.ignored_files:
                 return {path_elem: path_dict}
-
+        
         def recursive_update(a_dict, b_dict):
             for k, v in b_dict.items():
                 if k not in a_dict.keys() or type(v) != type(a_dict[k]):
@@ -383,7 +383,7 @@ class Push(Command):
                 else:
                     a_dict[k] = recursive_update(a_dict[k], v)
             return a_dict
-
+        
         attachments = {}
         app = {'_id': name}
         for root, dirs, files in os.walk(design):
@@ -412,7 +412,7 @@ class Push(Command):
                                 data = base64.encodestring(open(os.path.join(root, afile)).read())
                         else:
                             data = base64.encodestring(open(os.path.join(root, afile)).read())
-
+                        
                         attachments['/'.join(tmp_path)] = {
                             'data': data,
                             'content_type': mime
@@ -424,12 +424,11 @@ class Push(Command):
                             d[afile] = open(os.path.join(root, afile)).read()
                 if d.keys():
                     app = recursive_update(app, reduce(nest, reversed(path), d))
-
+        
         if attachments:
             app['_attachments'] = attachments
-
         return app
-
+    
     def _process_url(self, url):
         """ Extract auth credentials from url, if present """
         parts = urlparse(url)
@@ -442,36 +441,37 @@ class Push(Command):
         else:
             return url, "%s" % base64.encodestring('%s:%s' % (
                                            parts.username, getpass.getpass())).strip()
-
+    
     def run_command(self, args, options):
         """
         Build a python dictionary of the application, jsonise it and push it to
         CouchDB
         """
         print "Running Push Command for application in %s" % options.root
-
+        
         docs = os.path.join(options.root, '_docs')
         designs = os.path.join(options.root, '_design')
         apps_to_push = []
         attachments_to_push = []
-
+        
         saved_servers = {}
         servers_to_use = {}
         if os.path.exists('servers.json'):
             saved_servers = json.load(open('servers.json'))
-
-            for server in options.servers:
-                if server in saved_servers.keys():
-                    servers_to_use[server] = saved_servers[server]
-                else:
-                    url, auth = self._process_url(server)
-                    servers_to_use[server] = {"url": url}
-                    if auth:
-                        servers_to_use[server]["auth"] = auth
-
+        
+        for server in options.servers:
+            if server in saved_servers.keys():
+                servers_to_use[server] = saved_servers[server]
+            else:
+                url, auth = self._process_url(server)
+                servers_to_use[server] = {"url": url}
+                if auth:
+                    servers_to_use[server]["auth"] = auth
+        
         # TODO: push docs here too.
         if os.path.exists(designs):
             list_of_designs = os.listdir(designs)
+            
             if len(options.design) > 1:
                 list_of_designs = [options.design[1]]
             for design in list_of_designs:
@@ -480,9 +480,9 @@ class Push(Command):
                     root = os.path.join(designs, design)
                     app = self._walk_design(name, root, options)
                     apps_to_push.append(app)
-
+		
 		self._push_docs(apps_to_push, options.database, servers_to_use)
-
+		
 		if os.path.exists('_docs'):
 			docs_to_push = []
 			for jsonfile in docs:
@@ -490,6 +490,7 @@ class Push(Command):
 				f = open('_docs/%s' % jsonfile)
 				docs_to_push.append(json.load(f))
 				f.close()
+			print
 			self._push_docs(docs_to_push, options.database, servers_to_use)
 
 class Fetch(Command):
@@ -505,7 +506,7 @@ class Create(Command):
     """
     command_name = "create"
     no_required_args = 2
-
+    
     def _add_options(self):
         """
         Give the OptionParser additional options
@@ -515,17 +516,17 @@ class Create(Command):
                 dest="index",
                 action="store_true", default=False,
                 help="Add created document to an index")
-
+        
         Command._add_options(self)
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid entities are: %s" % ", ".join(commands)
-
+    
     def register_sub_commands(self):
         """
         Set up the sub_commands and the OptionParser.
         """
         self._register([ View(), ListGen(), Show(), Design(), App(), Document(), Html() ])
-
+        
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid entities are: %s" % ", ".join(commands)
 
@@ -535,13 +536,13 @@ class InstallVendor(Command):
     """
     command_name = "vendor"
     no_required_args = 1
-
+    
     def _add_options(self):
         group = OptionGroup(self.parser, "Vendor options",
                             "You can install vendors from non-standard "
                             "locations by specifying the URL on the command"
                             " line")
-
+        
         externals = {}
         for vendor in self.sub_commands.values():
             externals.update(vendor._template)
@@ -551,10 +552,10 @@ class InstallVendor(Command):
                         help="Download %s from URL instead of the default [%s]"\
                             % (external, package.url))
         self.parser.add_option_group(group)
-
+        
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid vendors are: %s" % ", ".join(commands)
-
+    
     def run_command(self, args, options):
         """
         """
@@ -573,7 +574,7 @@ class Generator(Command):
     def __init__(self):
         self.usage = "usage: %prog create " + self.command_name + " [options] [args]"
         Command.__init__(self)
-
+    
     def run_command(self, args, options):
         """
         Run the generator
@@ -585,7 +586,7 @@ class Generator(Command):
         else:
             path = self._create_path(options.root, options.design)
         self._push_template(path, args, options)
-
+    
     def _create_path(self, root, design=[], name=None, misc=None):
         """
         Create the path the generator needs
@@ -594,15 +595,15 @@ class Generator(Command):
             path_elems =[root]
             if len(design) > 1:
                 path_elems.extend(design)
-
+            
             if name:
                 if not self.path_elem:
                     self.path_elem = self.command_name
             path_elems.extend([self.path_elem, name])
-
+            
             if misc:
                 path_elems.extend(misc)
-
+            
             path_elems = [item for item in path_elems if item != None]
             path = os.path.join(*tuple(path_elems))
             self.logger.debug('Creating: %s' % path)
@@ -611,7 +612,7 @@ class Generator(Command):
             return path
         else:
             raise OSError('Application directory (%s) does not exist' % root)
-
+    
     def _write_file(self, path, content):
         """
         Write content to a file.
@@ -620,7 +621,7 @@ class Generator(Command):
         f.write(content)
         f.write('\n')
         f.close()
-
+    
     def _write_json(self, path, obj):
         """
         Write an object to json
@@ -628,7 +629,7 @@ class Generator(Command):
         f = open(path, 'w')
         json.dump(obj, f)
         f.close()
-
+    
     def _push_template(self, path, args, options):
         """
         Create files following _templates
@@ -650,7 +651,7 @@ class View(Generator):
 
 }''',
     }
-
+    
     def _add_options(self):
         """
         Allow for using a built in reduce.
@@ -659,14 +660,14 @@ class View(Generator):
                             dest="built_in", default=False,
                             choices=['sum', 'count', 'stats'],
                             help="Use a built in reduce (one of sum, count, stats)")
-
+        
         for reducer in ['sum', 'count', 'stats']:
             self.parser.add_option("--%s" % reducer,
                     dest="built_in", default=False,
                     action="store_const", const=reducer,
                     help="Use the %s built in reduce, shorthand for --builtin-reduce=%s" % (reducer, reducer)
                     )
-
+    
     def _push_template(self, path, args, options):
         """
         Create files following _templates, built_in should be either unset
@@ -703,12 +704,12 @@ class Document(Generator):
     command_name = 'document'
     path_elem = '_docs'
     _template = {'document': {}}
-
+    
     def _add_options(self):
         self.parser.add_option("--name",
                     dest="name",
                     help="Name the document")
-
+    
     def _push_template(self, path, args, options):
         path = self._create_path(options.root)
         file_name = str(uuid.uuid1())
@@ -718,7 +719,7 @@ class Document(Generator):
             doc['_id'] = options.name
             file_name = options.name
         doc_file = os.path.join(path, file_name)
-
+        
         self._write_json(doc_file, doc)
 
 class Html(Document):
@@ -733,17 +734,17 @@ class Html(Document):
         'document': '<html><head><title>REPLACE</title></head><body><h1>REPLACE</h1></body></html>'
     }
     required_opts = ['name']
-
+    
     def _add_options(self):
         self.parser.add_option("--name",
                     dest="name", help="Name the document")
-
+    
     def _push_template(self, path, args, options):
         file_name = '%s.html' % options.name.split('.htm')[0]
-
+        
         doc = self._template['document'].replace('REPLACE', options.name.split('.htm')[0].title())
         doc_file = os.path.join(path, file_name)
-
+        
         self._write_file(doc_file, doc)
 
 def fetch_archive(url, path, filter_list=[]):
