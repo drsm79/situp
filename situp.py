@@ -124,7 +124,7 @@ class Command:
         """
         Add options to the command's option parser
         """
-        # TODO: Simplify/generalise this so commands have their own group        
+        # TODO: Simplify/generalise this so commands have their own group
         group = OptionGroup(self.parser, "Base options", "")
 
         group.add_option("--quiet",
@@ -314,7 +314,7 @@ class Push(Command):
             self.parser.add_option("-m", "--minify",
                 dest="minify", default=False, action="store_true",
                 help="Minify javascript before pushing to database")
-        
+
         Command._add_options(self)
         self.parser.add_option_group(group)
 
@@ -412,7 +412,7 @@ class Push(Command):
                                 data = base64.encodestring(open(os.path.join(root, afile)).read())
                         else:
                             data = base64.encodestring(open(os.path.join(root, afile)).read())
-                            
+
                         attachments['/'.join(tmp_path)] = {
                             'data': data,
                             'content_type': mime
@@ -555,11 +555,11 @@ class InstallVendor(Command):
         commands = sorted(self.sub_commands.keys())
         self.parser.epilog = "Valid vendors are: %s" % ", ".join(commands)
 
-    def register_sub_commands(self):
+    def run_command(self, args, options):
         """
-        Set up the sub_commands and the OptionParser.
         """
-        self._register([ Backbone(), d3(), BackboneCouchDB() ])
+        vendor = FetchVendors()
+        vendor(args, options)
 
 class Generator(Command):
     """
@@ -796,11 +796,11 @@ def fetch_archive(url, path, filter_list=[]):
 
 Package = namedtuple('Package', ['url', 'filter'])
 
-class Vendor(Generator):
+class FetchVendors(Generator):
     """
-    Vendors are generators that download external code into the right place
-
-    TODO: run make/build commands as needed
+    Vendors are generators that download external code into the right place.
+    The code is held in kanso packages, and situp assumes that these have been
+    correctly built.
     """
     command_name = "vendor"
     def run_command(self, args, options):
@@ -810,62 +810,19 @@ class Vendor(Generator):
         self.logger.warning("Fetching externals, may take a while")
         # bit of a hack...
         self.command_name = ""
-        for external, package in self._template.items():
+        for external in args:
             path = self._create_path(options.root,
                                     options.design,
                                     'vendor/%s' % external)
             self.logger.debug('Installing %s into %s' % (external, path))
-            self.logger.debug('Fetching %s from %s' % (external, package.url))
-            fetch_archive(package.url, path, filter_list=package.filter)
+            # TODO: catch not founds etc
+            url = "http://kan.so/repository/%s" % external
+            (filename, response) = urllib.urlretrieve(url)
+            package = json.load(open(filename))
+            archive = "%s-%s.tar.gz" % (external, package['tags']['latest'])
+            fetch_archive(url + '/' + archive, path)
             self.logger.info("Installed %s to %s" % (external, path))
 
-class Backbone(Vendor):
-    """
-    Install Backbone Couch
-    """
-    command_name = 'backbone'
-    _template = {
-        'backbone' : Package('https://github.com/documentcloud/backbone/zipball/master', ['backbone.js']),
-        'backbone.couch' : Package('https://github.com/drsm79/backbone-couch/tarball/master', ['backbone.couch.js']),
-        'underscore' : Package('https://github.com/documentcloud/underscore/tarball/master', ['underscore-min.js'])
-    }
-
-class BackboneCouchDB(Vendor):
-    """
-    Install Backbone CouchDB
-    """
-    command_name = 'backbonecouchdb'
-    _template = {
-        'backbone' : Package('https://github.com/documentcloud/backbone/zipball/master', ['backbone.js']),
-        'backbonecouchdb' : Package('https://github.com/janmonschke/backbone-couchdb/tarball/master', ['backbone-couchdb.js']),
-        'underscore' : Package('https://github.com/documentcloud/underscore/tarball/master', ['underscore-min.js'])
-    }
-
-
-class YUI(Vendor):
-    """
-    Install YUI
-    """
-    command_name = 'yui'
-    _template = {}
-
-class d3(Vendor):
-    """
-    Install d3
-    """
-    command_name = 'd3'
-    _template = {
-        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
-    }
-
-class jQuery(Vendor):
-    """
-    Install jQuery
-    """
-    command_name = 'jquery'
-    _template = {
-        'jquery' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
-    }
 
 if __name__ == "__main__":
     situp = SitUp()
