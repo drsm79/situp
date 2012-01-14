@@ -4,6 +4,7 @@ import json
 import httplib
 import os
 import sys
+import stat
 import logging
 import urllib
 import urllib2
@@ -138,20 +139,20 @@ class Command:
         group = OptionGroup(self.parser, "Base options", "")
 
         group.add_option("--quiet",
-                    action="store_true", dest="quiet", default=False,
-                    help="reduce messages going to stdout")
+                action="store_true", dest="quiet", default=False,
+                help="reduce messages going to stdout")
 
         group.add_option("--debug",
-                    action="store_true", dest="debug", default=False,
-                    help="print extra messages to stdout")
+                action="store_true", dest="debug", default=False,
+                help="print extra messages to stdout")
 
         group.add_option("--version",
-                    action="store_true", dest="version", default=False,
-                    help="print situp.py version and exit")
+                action="store_true", dest="version", default=False,
+                help="print situp.py version and exit")
 
         group.add_option("--silent",
-                    action="store_true", dest="silent", default=False,
-                    help="print as little as possible to stdout")
+                action="store_true", dest="silent", default=False,
+                help="print as little as possible to stdout")
 
         self.parser.add_option_group(group)
 
@@ -486,7 +487,7 @@ class Generator(Command):
     name = "generator_interface"
     path_elem = None
     def __init__(self):
-        self.usage = "usage: %prog create " + self.name + " [options] [args]"
+        self.usage = "usage: %prog " + self.name + " [options] [args]"
         Command.__init__(self)
 
     def run_command(self, args, options):
@@ -609,6 +610,24 @@ class Design(Generator):
 
 class App(Generator):
     name = "app"
+
+class GitHook(Generator):
+    """
+    Write a post commit git hook such that situp.py push is called after git
+    commit.
+    """
+    name = "githook"
+    path_elem = ".git/hooks"
+    _template = {'post-commit': './situp.py push'}
+    def __init__(self):
+        self.usage = "usage: %prog " + self.name
+        Command.__init__(self)
+
+    def _push_template(self, path, args, options):
+        file = os.path.join(path, 'post-commit')
+        self._write_file(file, self._template['post-commit'])
+        os.chmod(file, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
+
 
 class Document(Generator):
     """
@@ -773,7 +792,7 @@ if __name__ == "__main__":
 
     cli = CommandDispatch()
     for command in [AddServer, Push, Fetch, InstallVendor, View, ListGen, Show,
-            Design, App, Document, Html]:
+            Design, App, Document, Html, GitHook]:
         cli.register_command(command())
 
 
