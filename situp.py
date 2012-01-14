@@ -294,7 +294,7 @@ class Push(Command):
                 data = {'docs': docs_list}
                 req.add_data(json.dumps(data))
                 f = urllib2.urlopen(req)
-                print f.read()
+                self.logger.info(f.read())
             except Exception, e:
                 self.logger.error("upload to %s failed" % server)
                 self.logger.info(e)
@@ -328,13 +328,14 @@ class Push(Command):
             path = root.split(name)[1].split('/')[1:]
             for walkeddir in dirs:
                 if walkeddir in self.ignored_files:
-                    print 'ignoring %s' % os.path.join(root, walkeddir)
+                    self.logger.debug('ignoring %s' % os.path.join(root,
+                        walkeddir))
                     dirs.remove(walkeddir)
             if files:
                 d = {}
                 for afile in files:
                     if afile in self.ignored_files:
-                        print 'ignoring %s' % afile
+                        self.logger.debug('ignoring %s' % afile)
                         continue
                     if '_attachments' in path:
                         tmp_path = list(path) # avoid overwriting the original path var
@@ -393,7 +394,8 @@ class Push(Command):
         Build a python dictionary of the application, jsonise it and push it to
         CouchDB
         """
-        print "Running Push Command for application in %s" % options.root
+        self.logger.debug("Running Push Command for application in %s" %
+                options.root)
 
         docs = os.path.join(options.root, '_docs')
         designs = os.path.join(options.root, '_design')
@@ -436,7 +438,7 @@ class Push(Command):
 				f = open('_docs/%s' % jsonfile)
 				docs_to_push.append(json.load(f))
 				f.close()
-			print
+
 			self._push_docs(docs_to_push, options.database, servers_to_use)
 
 class Fetch(Command):
@@ -776,7 +778,6 @@ if __name__ == "__main__":
 
 
     if len(sys.argv) > 1 and sys.argv[1] in cli.commands.keys():
-        print sys.argv
         cli(sys.argv[1])
     else:
         cli()
