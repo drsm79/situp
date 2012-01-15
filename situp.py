@@ -248,7 +248,7 @@ class Push(Command):
         group.add_option('-d', '--database', dest='database',
                 help="Push the app to named database")
         if CAN_MINIFY_JS:
-            self.parser.add_option("-m", "--minify",
+            group.add_option("-m", "--minify",
                 dest="minify", default=False, action="store_true",
                 help="Minify javascript before pushing to database")
 
