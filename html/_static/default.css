@@ -14,16 +14,16 @@
 /* -- page layout ----------------------------------------------------------- */
 
 body {
-    font-family: sans-serif;
+    font-family: palatino, "times new roman", serif;
     font-size: 100%;
-    background-color: #11303d;
+    background-color: #fff;
     color: #000;
     margin: 0;
     padding: 0;
 }
 
 div.document {
-    background-color: #1c4e63;
+    background-color: #ddd;
 }
 
 div.documentwrapper {
@@ -42,7 +42,7 @@ div.body {
 }
 
 div.footer {
-    color: #ffffff;
+    color: #222;
     width: 100%;
     padding: 9px 0 9px 0;
     text-align: center;
@@ -50,14 +50,14 @@ div.footer {
 }
 
 div.footer a {
-    color: #ffffff;
+    color: #222;
     text-decoration: underline;
 }
 
 div.related {
-    background-color: #133f52;
+    background-color: #afafaf;
     line-height: 30px;
-    color: #ffffff;
+    color: #222;
 }
 
 div.related a {
@@ -68,8 +68,7 @@ div.sphinxsidebar {
 }
 
 div.sphinxsidebar h3 {
-    font-family: 'Trebuchet MS', sans-serif;
-    color: #ffffff;
+    color: #444;
     font-size: 1.4em;
     font-weight: normal;
     margin: 0;
@@ -77,12 +76,11 @@ div.sphinxsidebar h3 {
 }
 
 div.sphinxsidebar h3 a {
-    color: #ffffff;
+    color: #222;
 }
 
 div.sphinxsidebar h4 {
-    font-family: 'Trebuchet MS', sans-serif;
-    color: #ffffff;
+    color: #222;
     font-size: 1.3em;
     font-weight: normal;
     margin: 5px 0 0 0;
@@ -90,7 +88,7 @@ div.sphinxsidebar h4 {
 }
 
 div.sphinxsidebar p {
-    color: #ffffff;
+    color: #222;
 }
 
 div.sphinxsidebar p.topless {
@@ -100,15 +98,15 @@ div.sphinxsidebar p.topless {
 div.sphinxsidebar ul {
     margin: 10px;
     padding: 0;
-    color: #ffffff;
+    color: #222;
 }
 
 div.sphinxsidebar a {
-    color: #98dbcc;
+    color: #222;
 }
 
 div.sphinxsidebar input {
-    border: 1px solid #98dbcc;
+    border: 1px solid #222;
     font-family: sans-serif;
     font-size: 1em;
 }
@@ -118,17 +116,16 @@ div.sphinxsidebar input {
 /* -- hyperlink styles ------------------------------------------------------ */
 
 a {
-    color: #355f7c;
-    text-decoration: none;
+    color: #222;
+    text-decoration: underline;
 }
 
 a:visited {
-    color: #355f7c;
-    text-decoration: none;
+    color: #222;
 }
 
 a:hover {
-    text-decoration: underline;
+    color: #444;
 }
 
 
@@ -141,21 +138,23 @@ div.body h3,
 div.body h4,
 div.body h5,
 div.body h6 {
-    font-family: 'Trebuchet MS', sans-serif;
-    background-color: #f2f2f2;
     font-weight: normal;
-    color: #20435c;
+    color: #222;
     border-bottom: 1px solid #ccc;
     margin: 20px -20px 10px -20px;
     padding: 3px 0 3px 10px;
 }
 
-div.body h1 { margin-top: 0; font-size: 200%; }
-div.body h2 { font-size: 160%; }
-div.body h3 { font-size: 140%; }
-div.body h4 { font-size: 120%; }
-div.body h5 { font-size: 110%; }
-div.body h6 { font-size: 100%; }
+div.body h1 {
+  font-size: 2.2em;
+  margin-top: 1em;
+  text-transform: uppercase;
+}
+div.body h2 { font-size: 2em; }
+div.body h3 { font-size: 1.6em; }
+div.body h4 { font-size: 1.4em; }
+div.body h5 { font-size: 1.2em; }
+div.body h6 { font-size: 1em; }
 
 a.headerlink {
     color: #c60f0f;
