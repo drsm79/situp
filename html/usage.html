@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Using situp.py &mdash; situp v0.1.1 documentation</title>
+    <title>Using situp.py &mdash; situp v0.1.2 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.1.1',
+        VERSION:     '0.1.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,9 +22,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
-    <link rel="next" title="What is a CouchApp" href="whatisacouchapp.html" />
-    <link rel="prev" title="Welcome to documentation for situp.py!" href="index.html" /> 
+    <link rel="top" title="situp v0.1.2 documentation" href="index.html" />
+    <link rel="next" title="situp public API" href="code.html" />
+    <link rel="prev" title="situp.py" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,12 +37,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="whatisacouchapp.html" title="What is a CouchApp"
+          <a href="code.html" title="situp public API"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to documentation for situp.py!"
+          <a href="index.html" title="situp.py"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">situp v0.1.2 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -53,43 +53,52 @@
             
   <div class="section" id="using-situp-py">
 <h1>Using situp.py<a class="headerlink" href="#using-situp-py" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="creating-a-view">
-<h2>Creating a view<a class="headerlink" href="#creating-a-view" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="help">
+<h2>Help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h2>
+<p>All commands in situp.py have a help function. Invoke it by running:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multiple-design-doc-support">
+<h2>Multiple design doc support<a class="headerlink" href="#multiple-design-doc-support" title="Permalink to this headline">¶</a></h2>
+<p>situp.py supports couchapps that use multiple design documents. If you just
+want the current directory to be your application just run situp.py as:</p>
+<div class="highlight-python"><pre>situp.py view foo</pre>
+</div>
+<p>If you would like to create a view in a specific design doc, run the command
+as:</p>
+<div class="highlight-python"><pre>situp.py view foo -d tst-app</pre>
+</div>
+</div>
+<div class="section" id="creating-views-lists-shows-and-filters">
+<h2>Creating views, lists, shows and filters<a class="headerlink" href="#creating-views-lists-shows-and-filters" title="Permalink to this headline">¶</a></h2>
 <p>situp.py will create a view called foo in tst-app ($PWD/_design/tst-app) with
 empty functions in the map.js and reduce.js files.:</p>
-<div class="highlight-python"><pre>situp.py -d tst-app create view foo</pre>
+<div class="highlight-python"><pre>situp.py view foo</pre>
 </div>
 <p>Will create a view called bar in tst-app ($PWD/_design/tst-app) with an empty
 function in map.js and a _sum built in reduce.:</p>
-<div class="highlight-python"><pre>situp.py -d tst-app create view bar --sum</pre>
+<div class="highlight-python"><pre>situp.py view bar --sum</pre>
 </div>
 <p>Will create the view baz in the views directory of the current working dir
 (e.g. $PWD/views/baz):</p>
-<div class="highlight-python"><pre>situp.py create view baz</pre>
+<div class="highlight-python"><pre>situp.py view baz</pre>
+</div>
+<p>The same syntax will create lists, shows and filters:</p>
+<div class="highlight-python"><pre>situp.py list mylist
+situp.py show myshow
+situp.py filter myfilter</pre>
 </div>
 </div>
 <div class="section" id="importing-a-vendor">
 <h2>Importing a vendor<a class="headerlink" href="#importing-a-vendor" title="Permalink to this headline">¶</a></h2>
 <p>Vendors can be imported into the application via:</p>
-<div class="highlight-python"><pre>situp.py -d tst-app vendor backbone</pre>
+<div class="highlight-python"><pre>situp.py vendor &lt;vendor-name&gt;</pre>
 </div>
 <p>Will download and install the vendor backbone and its dependencies into the
-tst-app design. Supported vendors are:</p>
-<ul class="simple">
-<li>Backbone (both flavours)</li>
-<li>d3</li>
-<li>YUI (soon...)</li>
-</ul>
-<p>Adding a vendor to situp.py should be simple, for instance the d3 vendor looks like</p>
-<div class="highlight-python"><pre>class d3(Vendor):
-"""
-    Install d3
-    """
-    command_name = 'd3'
-    _template = {
-        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
-    }</pre>
-</div>
+tst-app design. situp.py uses the kanso packages, so anything that is available
+on <a class="reference external" href="http://kan.so/packages/">http://kan.so/packages/</a> should work with situp.</p>
 </div>
 <div class="section" id="defining-servers">
 <h2>Defining servers<a class="headerlink" href="#defining-servers" title="Permalink to this headline">¶</a></h2>
@@ -104,16 +113,23 @@ since people will be able to access your couch instances.</p>
 <div class="section" id="pushing-to-a-set-of-servers">
 <h2>Pushing to a (set of) servers<a class="headerlink" href="#pushing-to-a-set-of-servers" title="Permalink to this headline">¶</a></h2>
 <p>Pushing an application to a server is as simple as running:</p>
-<div class="highlight-python"><pre>situp.py -d tst-app push -s http://localhost:5984 -d databasename</pre>
+<div class="highlight-python"><pre>situp.py push -s http://localhost:5984 -d databasename</pre>
 </div>
 <p>The -s option can be specified multiple times.</p>
 <p>If a server has been defined (see above) you can refer to it via it&#8217;s short
 name:</p>
-<div class="highlight-python"><pre>situp.py -d tst-app push -s dev -d databasename</pre>
+<div class="highlight-python"><pre>situp.py push -s dev -d databasename</pre>
 </div>
 <p>If a server URL has a username in it (e.g. <a class="reference external" href="mailto:joe&#37;&#52;&#48;localhost">joe<span>&#64;</span>localhost</a>:5984) situp.py will
 ask for a password. This won&#8217;t be stored anywhere and will not be in the shell
 history.</p>
+</div>
+<div class="section" id="git-hook">
+<h2>Git hook<a class="headerlink" href="#git-hook" title="Permalink to this headline">¶</a></h2>
+<p>You can install a git post commit hook to push to your server at the same time
+as committing to your git repository by running:</p>
+<div class="highlight-python"><pre>situp.py githook</pre>
+</div>
 </div>
 </div>
 
@@ -126,20 +142,23 @@ history.</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Using situp.py</a><ul>
-<li><a class="reference internal" href="#creating-a-view">Creating a view</a></li>
+<li><a class="reference internal" href="#help">Help</a></li>
+<li><a class="reference internal" href="#multiple-design-doc-support">Multiple design doc support</a></li>
+<li><a class="reference internal" href="#creating-views-lists-shows-and-filters">Creating views, lists, shows and filters</a></li>
 <li><a class="reference internal" href="#importing-a-vendor">Importing a vendor</a></li>
 <li><a class="reference internal" href="#defining-servers">Defining servers</a></li>
 <li><a class="reference internal" href="#pushing-to-a-set-of-servers">Pushing to a (set of) servers</a></li>
+<li><a class="reference internal" href="#git-hook">Git hook</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to documentation for situp.py!</a></p>
+                        title="previous chapter">situp.py</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="whatisacouchapp.html"
-                        title="next chapter">What is a CouchApp</a></p>
+  <p class="topless"><a href="code.html"
+                        title="next chapter">situp public API</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/usage.txt"
@@ -172,16 +191,16 @@ history.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="whatisacouchapp.html" title="What is a CouchApp"
+          <a href="code.html" title="situp public API"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Welcome to documentation for situp.py!"
+          <a href="index.html" title="situp.py"
              >previous</a> |</li>
-        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">situp v0.1.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Simon Metson.
+        &copy; Copyright 2011, 2012 Simon Metson.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>

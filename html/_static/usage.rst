@@ -1,46 +1,56 @@
 Using situp.py
 ========================================
-Creating a view
+Help
+----------------------------------------
+All commands in situp.py have a help function. Invoke it by running: ::
+
+    setup.py <command> -h
+
+
+Multiple design doc support
+----------------------------------------
+situp.py supports couchapps that use multiple design documents. If you just
+want the current directory to be your application just run situp.py as: ::
+
+	situp.py view foo
+
+If you would like to create a view in a specific design doc, run the command
+as: ::
+
+	situp.py view foo -d tst-app
+
+Creating views, lists, shows and filters
 ----------------------------------------
 situp.py will create a view called foo in tst-app ($PWD/_design/tst-app) with
 empty functions in the map.js and reduce.js files.::
 
-	situp.py -d tst-app create view foo
+	situp.py view foo
 
 Will create a view called bar in tst-app ($PWD/_design/tst-app) with an empty
 function in map.js and a _sum built in reduce.::
 
-	situp.py -d tst-app create view bar --sum
+	situp.py view bar --sum
 
 Will create the view baz in the views directory of the current working dir
 (e.g. $PWD/views/baz)::
 
-	situp.py create view baz
+	situp.py view baz
 
+The same syntax will create lists, shows and filters: ::
+
+	situp.py list mylist
+	situp.py show myshow
+	situp.py filter myfilter
 
 Importing a vendor
 ----------------------------------------
 Vendors can be imported into the application via: ::
 
-	situp.py -d tst-app vendor backbone
+	situp.py vendor <vendor-name>
 
 Will download and install the vendor backbone and its dependencies into the
-tst-app design. Supported vendors are:
-
-* Backbone (both flavours)
-* d3
-* YUI (soon...)
-
-Adding a vendor to situp.py should be simple, for instance the d3 vendor looks like ::
-
-	class d3(Vendor):
-    	"""
-	    Install d3
-	    """
-	    command_name = 'd3'
-	    _template = {
-	        'd3' : Package('https://github.com/mbostock/d3/tarball/v2.4.4', ['min.js']),
-	    }
+tst-app design. situp.py uses the kanso packages, so anything that is available
+on http://kan.so/packages/ should work with situp.
 
 Defining servers
 ----------------------------------------
@@ -57,15 +67,23 @@ Pushing to a (set of) servers
 ----------------------------------------
 Pushing an application to a server is as simple as running: ::
 
-	situp.py -d tst-app push -s http://localhost:5984 -d databasename
+	situp.py push -s http://localhost:5984 -d databasename
 
 The -s option can be specified multiple times.
 
 If a server has been defined (see above) you can refer to it via it's short
 name: ::
 
-	situp.py -d tst-app push -s dev -d databasename
+	situp.py push -s dev -d databasename
 
 If a server URL has a username in it (e.g. joe@localhost:5984) situp.py will
 ask for a password. This won't be stored anywhere and will not be in the shell
 history.
+
+Git hook
+----------------------------------------
+
+You can install a git post commit hook to push to your server at the same time
+as committing to your git repository by running: ::
+
+    situp.py githook

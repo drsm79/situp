@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>What is a CouchApp &mdash; situp v0.1.1 documentation</title>
+    <title>About situp.py &mdash; situp v0.1.2 documentation</title>
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.1.1',
+        VERSION:     '0.1.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,9 +22,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="situp v0.1.1 documentation" href="index.html" />
-    <link rel="next" title="Project pages" href="externals.html" />
-    <link rel="prev" title="Features of situp.py" href="plan.html" /> 
+    <link rel="top" title="situp v0.1.2 documentation" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -36,13 +34,7 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="externals.html" title="Project pages"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="plan.html" title="Features of situp.py"
-             accesskey="P">previous</a> |</li>
-        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">situp v0.1.2 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -51,15 +43,24 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="what-is-a-couchapp">
-<h1>What is a CouchApp<a class="headerlink" href="#what-is-a-couchapp" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="philosophy">
-<h2>Philosophy<a class="headerlink" href="#philosophy" title="Permalink to this headline">¶</a></h2>
-<p>A CouchApp is an application that runs directly out of CouchDB. It has no
-external server, the database provides data and user interface. The application
-may be built of one or more design documents (for example a design doc that
-provides authorisation and another that provides data for the user interface).</p>
+  <div class="section" id="about-situp-py">
+<h1>About situp.py<a class="headerlink" href="#about-situp-py" title="Permalink to this headline">¶</a></h1>
+<p>situp.py originally started out as an attempt to write a simplified CouchApp
+&#8220;client&#8221; that followed and reused the python distutils package, the idea being
+that distutils would take care of lots of the heavy lifting (and provide a few
+features &#8220;out of the box&#8221;). After a bit of tinkering it became fairly apparent
+that a lot of code would be necessary to override distutils behaviour. So now
+situp.py is just another CouchApp client (and an excuse to experiment with a
+few things).</p>
+<p>A key feature of situp is that it&#8217;s only dependency is python - this makes it
+easy to use in automated test/install situations. If you don&#8217;t want to use
+minification it&#8217;s a single file.</p>
 </div>
+<div class="section" id="what-is-a-couchapp">
+<h1>What is a CouchApp?<a class="headerlink" href="#what-is-a-couchapp" title="Permalink to this headline">¶</a></h1>
+<p>My colleague Mike can probably <a class="reference external" href="https://github.com/mikewallace1979/CouchApp-Handbook">tell you better</a>
+than I! In short a couchapp is an application that serves and is served from
+Apache CouchDB.</p>
 </div>
 
 
@@ -70,18 +71,10 @@ provides authorisation and another that provides data for the user interface).</
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">What is a CouchApp</a><ul>
-<li><a class="reference internal" href="#philosophy">Philosophy</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">About situp.py</a></li>
+<li><a class="reference internal" href="#what-is-a-couchapp">What is a CouchApp?</a></li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="plan.html"
-                        title="previous chapter">Features of situp.py</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="externals.html"
-                        title="next chapter">Project pages</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/whatisacouchapp.txt"
@@ -113,17 +106,11 @@ provides authorisation and another that provides data for the user interface).</
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li class="right" >
-          <a href="externals.html" title="Project pages"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="plan.html" title="Features of situp.py"
-             >previous</a> |</li>
-        <li><a href="index.html">situp v0.1.1 documentation</a> &raquo;</li> 
+        <li><a href="index.html">situp v0.1.2 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Simon Metson.
+        &copy; Copyright 2011, 2012 Simon Metson.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>

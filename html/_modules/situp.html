@@ -7,13 +7,13 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>situp &mdash; situp v0.1.1 documentation</title>
+    <title>situp &mdash; situp v0.1.2 documentation</title>
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '0.1.1',
+        VERSION:     '0.1.2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -22,7 +22,7 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="situp v0.1.1 documentation" href="../index.html" />
+    <link rel="top" title="situp v0.1.2 documentation" href="../index.html" />
     <link rel="up" title="Module code" href="index.html" /> 
   </head>
   <body>
@@ -35,7 +35,7 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">situp v0.1.1 documentation</a> &raquo;</li>
+        <li><a href="../index.html">situp v0.1.2 documentation</a> &raquo;</li>
           <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
@@ -46,11 +46,13 @@
           <div class="body">
             
   <h1>Source code for situp</h1><div class="highlight"><pre>
+<span class="c">#! /usr/bin/env python</span>
 <span class="kn">import</span> <span class="nn">base64</span>
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">httplib</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">stat</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">urllib</span>
 <span class="kn">import</span> <span class="nn">urllib2</span>
@@ -62,19 +64,53 @@
 <span class="kn">import</span> <span class="nn">getpass</span>
 <span class="kn">from</span> <span class="nn">optparse</span> <span class="kn">import</span> <span class="n">OptionParser</span><span class="p">,</span> <span class="n">OptionGroup</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span><span class="p">,</span> <span class="n">namedtuple</span>
-<span class="kn">from</span> <span class="nn">urlparse</span> <span class="kn">import</span> <span class="n">urlunparse</span>
+<span class="kn">from</span> <span class="nn">urlparse</span> <span class="kn">import</span> <span class="n">urlunparse</span><span class="p">,</span> <span class="n">urlparse</span>
 <span class="kn">from</span> <span class="nn">httplib</span> <span class="kn">import</span> <span class="n">HTTPConnection</span>
 <span class="kn">from</span> <span class="nn">httplib</span> <span class="kn">import</span> <span class="n">HTTPSConnection</span>
 <span class="kn">from</span> <span class="nn">httplib</span> <span class="kn">import</span> <span class="n">HTTPException</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">CAN_MINIFY_JS</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">minify</span> <span class="kn">import</span> <span class="n">jsmin</span>
+    <span class="n">CAN_MINIFY_JS</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s">&quot;0.1.2&quot;</span>
+
+<span class="k">class</span> <span class="nc">CommandDispatch</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">commands</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">register_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">default</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">command</span>
+        <span class="k">if</span> <span class="n">default</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">command</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="n">command</span><span class="p">]()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">default_command</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">default_command</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">]()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">usage</span> <span class="o">=</span> <span class="s">&#39;%prog command [options]</span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="n">usage</span> <span class="o">+=</span> <span class="s">&#39;Available commands: &#39;</span>
+            <span class="n">usage</span> <span class="o">+=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span><span class="n">usage</span><span class="o">=</span><span class="n">usage</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
 
 <div class="viewcode-block" id="Command"><a class="viewcode-back" href="../code.html#situp.Command">[docs]</a><span class="k">class</span> <span class="nc">Command</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A command has a name, an option parser and a dictionary of sub commands it</span>
 <span class="sd">    can call.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;interface&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;interface&quot;</span>
     <span class="n">no_required_args</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">required_opts</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">dependencies</span> <span class="o">=</span> <span class="p">[]</span>
@@ -85,59 +121,40 @@
 <span class="sd">        Initialise the logger and OptionParser for the Command.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;situp-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">command_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;situp-</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c"># Need to deal with competing OptionParsers...</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">disable_interspersed_args</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">register_sub_commands</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span><span class="n">conflict_handler</span><span class="o">=</span><span class="s">&quot;resolve&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">set_usage</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">usage</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__doc__</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_options</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Set up the logger, work out if I should print help or call the command.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_args</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">configure_logger</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_args</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_configure_logger</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;called&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">cmd_help</span><span class="p">:</span>
-            <span class="c"># call the print_help function for the command and exit</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="ow">and</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">print_help</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">exit_invalid</span><span class="p">(</span><span class="s">&quot;You must specify a valid action for --cmd-help.&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">options</span><span class="o">.</span><span class="n">version</span><span class="p">:</span>
-            <span class="k">print</span> <span class="s">&quot;situp.py version </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">__version__</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="ow">and</span> \
-                                    <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exit_invalid</span><span class="p">(</span><span class="s">&quot;You must specify a valid command.&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]](</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s">&#39;Not implemented in base class&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Command.process_args"><a class="viewcode-back" href="../code.html#situp.Command.process_args">[docs]</a>    <span class="k">def</span> <span class="nf">process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Process the option parser, updating it with data from parent parser</span>
 <span class="sd">        then check the args are valid.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">options</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">new_options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span><span class="c">#, values=options)</span>
-            <span class="n">options</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">new_options</span><span class="o">.</span><span class="n">__dict__</span><span class="p">,</span> <span class="s">&#39;loose&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">args</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+        <span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
 
         <span class="n">die</span> <span class="o">=</span> <span class="bp">False</span>
         <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_opts</span><span class="p">:</span>
@@ -147,9 +164,9 @@
         <span class="k">if</span> <span class="n">die</span><span class="p">:</span>
             <span class="k">print</span> <span class="s">&#39;Run command with -h/--help for further information&#39;</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">options</span><span class="p">,</span> <span class="n">args</span>
-</div>
-    <span class="k">def</span> <span class="nf">configure_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">options</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">_configure_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">silent</span><span class="p">:</span>
@@ -163,80 +180,30 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Add options to the command&#39;s option parser</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+
+    <span class="k">def</span> <span class="nf">_default_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Base options&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
 
         <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--quiet&quot;</span><span class="p">,</span>
-                    <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;quiet&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;reduce messages going to stdout&quot;</span><span class="p">)</span>
+                <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;quiet&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;reduce messages going to stdout&quot;</span><span class="p">)</span>
 
         <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--debug&quot;</span><span class="p">,</span>
-                    <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;debug&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;print extra messages to stdout&quot;</span><span class="p">)</span>
-
-        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--silent&quot;</span><span class="p">,</span>
-                    <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;silent&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;print no messages to stdout&quot;</span><span class="p">)</span>
+                <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;debug&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;print extra messages to stdout&quot;</span><span class="p">)</span>
 
         <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--version&quot;</span><span class="p">,</span>
-                    <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;version&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;print situp.py version and exit&quot;</span><span class="p">)</span>
+                <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;version&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;print situp.py version and exit&quot;</span><span class="p">)</span>
 
-        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--cmd-help&quot;</span><span class="p">,</span>
-                    <span class="n">metavar</span><span class="o">=</span><span class="s">&quot;COMMAND&quot;</span><span class="p">,</span>
-                    <span class="n">dest</span><span class="o">=</span><span class="s">&quot;cmd_help&quot;</span><span class="p">,</span>
-                    <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span><span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                    <span class="n">help</span><span class="o">=</span><span class="s">&quot;print help for the named command&quot;</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--silent&quot;</span><span class="p">,</span>
+                <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;silent&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;print as little as possible to stdout&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Command.register_sub_commands"><a class="viewcode-back" href="../code.html#situp.Command.register_sub_commands">[docs]</a>    <span class="k">def</span> <span class="nf">register_sub_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        This is a dummy method for subclasses to fill in</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
-</div>
-    <span class="k">def</span> <span class="nf">_register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commands</span><span class="p">,</span> <span class="n">usage</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialise subcommand classes for the command and update the optparser</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">commands</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">command_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cmd</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">usage</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">usage</span> <span class="o">=</span> <span class="s">&quot;usage: %prog &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">command_name</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">usage</span> <span class="o">+=</span> <span class="s">&quot; [</span><span class="si">%s</span><span class="s">]&quot;</span> <span class="o">%</span>  <span class="s">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">usage</span> <span class="o">+=</span> <span class="s">&quot; [options] [args]&quot;</span>
-
-<div class="viewcode-block" id="Command.print_help"><a class="viewcode-back" href="../code.html#situp.Command.print_help">[docs]</a>    <span class="k">def</span> <span class="nf">print_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Encapsulate the Command&#39;s option parser&#39;s print_help() method here in</span>
-<span class="sd">        case there&#39;s some reason to override it.</span>
-
-<span class="sd">        parser.print_help() actually prints to the screen, so just run that.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="p">[</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">print_help</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</div>
-<div class="viewcode-block" id="Command.exit_invalid"><a class="viewcode-back" href="../code.html#situp.Command.exit_invalid">[docs]</a>    <span class="k">def</span> <span class="nf">exit_invalid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        The command doesn&#39;t exist so bail</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">print</span> <span class="n">msg</span>
-        <span class="c"># Described the valid commands in epilog, reuse here</span>
-        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span>
-        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-</div></div>
-<div class="viewcode-block" id="SitUp"><a class="viewcode-back" href="../code.html#situp.SitUp">[docs]</a><span class="k">class</span> <span class="nc">SitUp</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    The main user interface command.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">commands</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot;Valid commands are: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">commands</span><span class="p">)</span>
-
-        <span class="c"># This is the important bit</span>
         <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Situp options&quot;</span><span class="p">,</span> <span class="s">&quot;Situp allows you to&quot;</span>
                     <span class="s">&quot; have multiple design documents in your application via&quot;</span>
                     <span class="s">&quot; the -d/--design switch. You can work on your app in&quot;</span>
@@ -255,22 +222,14 @@
                     <span class="n">help</span><span class="o">=</span><span class="s">&quot;Application root directory, default is </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">pwd</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
-        <span class="n">Command</span><span class="o">.</span><span class="n">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-
-<div class="viewcode-block" id="SitUp.register_sub_commands"><a class="viewcode-back" href="../code.html#situp.SitUp.register_sub_commands">[docs]</a>    <span class="k">def</span> <span class="nf">register_sub_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Register my commands</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sub_commands</span> <span class="o">=</span> <span class="p">[</span><span class="n">Create</span><span class="p">(),</span> <span class="n">InstallVendor</span><span class="p">(),</span> <span class="n">Push</span><span class="p">(),</span> <span class="n">Fetch</span><span class="p">(),</span> <span class="n">AddServer</span><span class="p">()]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">(</span><span class="n">sub_commands</span><span class="p">)</span>
-</div></div>
+</div>
 <span class="n">LocatedFile</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;LocatedFile&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">,</span> <span class="s">&#39;filename&#39;</span><span class="p">])</span>
 
 <div class="viewcode-block" id="AddServer"><a class="viewcode-back" href="../code.html#situp.AddServer">[docs]</a><span class="k">class</span> <span class="nc">AddServer</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Add a server to the servers.json file</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;addserver&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;addserver&#39;</span>
     <span class="n">required_opts</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;name&#39;</span><span class="p">,</span> <span class="s">&#39;server&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -286,7 +245,7 @@
         <span class="c">#self.parser.add_option(&quot;--noauth&quot;,</span>
         <span class="c">#        dest=&quot;servers&quot;, default=[], action=&#39;append&#39;,</span>
         <span class="c">#        help=&quot;Push the app to one or more servers (multiple -s options are allowed)&quot;)</span>
-        <span class="n">Command</span><span class="o">.</span><span class="n">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
 
     <span class="k">def</span> <span class="nf">process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="n">options</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">Command</span><span class="o">.</span><span class="n">process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
@@ -315,27 +274,34 @@
 <span class="sd">    design to push only a single design document, otherwise all designs in the</span>
 <span class="sd">    app will be pushed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;push&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;push&#39;</span>
     <span class="n">no_required_args</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="c">#TODO pick this up from config</span>
-    <span class="c">#TODO support regexp</span>
+    <span class="c">#TODO: pick this up from config</span>
+    <span class="c">#TODO: support regexp</span>
     <span class="n">ignored_files</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;.DS_Store&#39;</span><span class="p">,</span> <span class="s">&#39;.cvs&#39;</span><span class="p">,</span> <span class="s">&#39;.svn&#39;</span><span class="p">,</span> <span class="s">&#39;.hg&#39;</span><span class="p">,</span> <span class="s">&#39;.git&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Give the OptionParser additional options</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c">#Create commands can add the created documents to an index</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;--open&quot;</span><span class="p">,</span>
+        <span class="n">about</span> <span class="o">=</span>  <span class="s">&quot;Options available to the push command.&quot;</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Push options&quot;</span><span class="p">,</span> <span class="n">about</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="s">&quot;--open&quot;</span><span class="p">,</span>
                 <span class="n">dest</span><span class="o">=</span><span class="s">&quot;open_app&quot;</span><span class="p">,</span>
                 <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s">&quot;Once pushed, open the application&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-s&quot;</span><span class="p">,</span> <span class="s">&quot;--server&quot;</span><span class="p">,</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-s&quot;</span><span class="p">,</span> <span class="s">&quot;--server&quot;</span><span class="p">,</span>
                 <span class="n">dest</span><span class="o">=</span><span class="s">&quot;servers&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;append&#39;</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s">&quot;Push the app to one or more servers (multiple -s options are allowed)&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-d&#39;</span><span class="p">,</span> <span class="s">&#39;--database&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;database&#39;</span><span class="p">,</span>
-                <span class="n">help</span><span class="o">=</span><span class="s">&#39;the database to write to.&#39;</span><span class="p">)</span>
-        <span class="n">Command</span><span class="o">.</span><span class="n">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-d&#39;</span><span class="p">,</span> <span class="s">&#39;--database&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;database&#39;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;Push the app to named database&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">CAN_MINIFY_JS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-m&quot;</span><span class="p">,</span> <span class="s">&quot;--minify&quot;</span><span class="p">,</span>
+                <span class="n">dest</span><span class="o">=</span><span class="s">&quot;minify&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span>
+                <span class="n">help</span><span class="o">=</span><span class="s">&quot;Minify javascript before pushing to database&quot;</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_push_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">docs_list</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">servers</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -344,7 +310,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">srv</span> <span class="o">=</span> <span class="n">servers</span><span class="p">[</span><span class="n">server</span><span class="p">]</span>
-            <span class="k">print</span> <span class="s">&#39;upload to </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">srv</span><span class="p">[</span><span class="s">&#39;url&#39;</span><span class="p">],</span> <span class="n">db</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;upload to </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">srv</span><span class="p">[</span><span class="s">&#39;url&#39;</span><span class="p">],</span> <span class="n">db</span><span class="p">))</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
                     <span class="n">conn</span> <span class="o">=</span> <span class="bp">None</span>
@@ -352,6 +318,7 @@
                         <span class="n">conn</span> <span class="o">=</span> <span class="n">httplib</span><span class="o">.</span><span class="n">HTTPSConnection</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;https://&#39;</span><span class="p">))</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">conn</span> <span class="o">=</span> <span class="n">httplib</span><span class="o">.</span><span class="n">HTTPConnection</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;http://&#39;</span><span class="p">))</span>
+                    <span class="n">conn</span><span class="o">.</span><span class="n">putheader</span><span class="p">(</span><span class="s">&quot;User-Agent&quot;</span><span class="p">,</span> <span class="s">&quot;situp-</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">__version__</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">auth</span><span class="p">:</span>
                         <span class="n">conn</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;Authorization&quot;</span><span class="p">:</span> <span class="s">&quot;Basic </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">auth</span><span class="p">})</span>
                     <span class="k">else</span><span class="p">:</span>
@@ -372,17 +339,20 @@
 
                 <span class="n">req</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">/_bulk_docs&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">srv</span><span class="p">[</span><span class="s">&#39;url&#39;</span><span class="p">],</span> <span class="n">db</span><span class="p">))</span>
                 <span class="n">req</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&quot;Content-Type&quot;</span><span class="p">,</span> <span class="s">&quot;application/json&quot;</span><span class="p">)</span>
+                <span class="n">req</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&quot;User-Agent&quot;</span><span class="p">,</span> <span class="s">&quot;situp-</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">__version__</span><span class="p">)</span>
                 <span class="k">if</span> <span class="s">&#39;auth&#39;</span> <span class="ow">in</span> <span class="n">srv</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                     <span class="n">req</span><span class="o">.</span><span class="n">add_header</span><span class="p">(</span><span class="s">&quot;Authorization&quot;</span><span class="p">,</span> <span class="s">&quot;Basic </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">srv</span><span class="p">[</span><span class="s">&#39;auth&#39;</span><span class="p">])</span>
                 <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;docs&#39;</span><span class="p">:</span> <span class="n">docs_list</span><span class="p">}</span>
                 <span class="n">req</span><span class="o">.</span><span class="n">add_data</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
                 <span class="n">f</span> <span class="o">=</span> <span class="n">urllib2</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">req</span><span class="p">)</span>
-                <span class="k">print</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
-                <span class="k">print</span> <span class="s">&quot;upload to </span><span class="si">%s</span><span class="s"> failed&quot;</span> <span class="o">%</span> <span class="n">server</span>
-                <span class="k">print</span> <span class="n">e</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;upload to </span><span class="si">%s</span><span class="s"> failed&quot;</span> <span class="o">%</span> <span class="n">server</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_walk_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">design</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">_walk_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">design</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Walk through the design document, building a dictionary as it goes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -409,26 +379,45 @@
             <span class="n">path</span> <span class="o">=</span> <span class="n">root</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">name</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
             <span class="k">for</span> <span class="n">walkeddir</span> <span class="ow">in</span> <span class="n">dirs</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">walkeddir</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_files</span><span class="p">:</span>
-                    <span class="k">print</span> <span class="s">&#39;ignoring </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">walkeddir</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ignoring </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span>
+                        <span class="n">walkeddir</span><span class="p">))</span>
                     <span class="n">dirs</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">walkeddir</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">files</span><span class="p">:</span>
                 <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">afile</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">afile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_files</span><span class="p">:</span>
-                        <span class="k">print</span> <span class="s">&#39;ignoring </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">afile</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;ignoring </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">afile</span><span class="p">)</span>
                         <span class="k">continue</span>
                     <span class="k">if</span> <span class="s">&#39;_attachments&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
                         <span class="n">tmp_path</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="c"># avoid overwriting the original path var</span>
                         <span class="n">tmp_path</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&#39;_attachments&#39;</span><span class="p">)</span>
                         <span class="n">tmp_path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">afile</span><span class="p">)</span>
+
+                        <span class="n">mime</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">mime</span><span class="p">:</span>
+                            <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Assuming text/plain mime type for </span><span class="si">%s</span><span class="s">&#39;</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="n">afile</span><span class="p">)</span>
+                            <span class="n">mime</span> <span class="o">=</span> <span class="s">&#39;text/plain&#39;</span>
+
+                        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">minify</span> <span class="ow">and</span> <span class="n">mime</span> <span class="o">==</span> <span class="s">&quot;application/javascript&quot;</span><span class="p">:</span>
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="n">mini</span> <span class="o">=</span> <span class="n">jsmin</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                                <span class="n">data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="n">mini</span><span class="p">)</span>
+                            <span class="k">except</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Could not minify </span><span class="si">%s</span><span class="s">, uploading expanded version&quot;</span> <span class="o">%</span> <span class="n">afile</span><span class="p">)</span>
+                                <span class="n">data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
                         <span class="n">attachments</span><span class="p">[</span><span class="s">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{</span>
-                            <span class="s">&#39;data&#39;</span><span class="p">:</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">()),</span>
-                            <span class="s">&#39;content_type&#39;</span><span class="p">:</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="s">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span>
+                            <span class="s">&#39;content_type&#39;</span><span class="p">:</span> <span class="n">mime</span>
                         <span class="p">}</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;views&#39;</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="n">afile</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;map.js&#39;</span><span class="p">,</span> <span class="s">&#39;reduce.js&#39;</span><span class="p">]:</span>
-                                <span class="n">d</span><span class="p">[</span><span class="n">afile</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;.js&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">path</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;views&#39;</span><span class="p">,</span> <span class="s">&#39;lists&#39;</span><span class="p">,</span>
+                                <span class="s">&#39;shows&#39;</span><span class="p">,</span> <span class="s">&#39;filters&#39;</span><span class="p">]:</span>
+                            <span class="n">d</span><span class="p">[</span><span class="n">afile</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;.js&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
                         <span class="k">else</span><span class="p">:</span>
                             <span class="n">d</span><span class="p">[</span><span class="n">afile</span><span class="p">]</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">afile</span><span class="p">))</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
@@ -436,15 +425,28 @@
 
         <span class="k">if</span> <span class="n">attachments</span><span class="p">:</span>
             <span class="n">app</span><span class="p">[</span><span class="s">&#39;_attachments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">attachments</span>
-
         <span class="k">return</span> <span class="n">app</span>
+
+    <span class="k">def</span> <span class="nf">_process_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Extract auth credentials from url, if present &quot;&quot;&quot;</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parts</span><span class="o">.</span><span class="n">username</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">parts</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">url</span><span class="p">,</span> <span class="bp">None</span>
+        <span class="n">netloc</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">parts</span><span class="o">.</span><span class="n">hostname</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">urlunparse</span><span class="p">((</span><span class="n">parts</span><span class="o">.</span><span class="n">scheme</span><span class="p">,</span> <span class="n">netloc</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">fragment</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">parts</span><span class="o">.</span><span class="n">username</span> <span class="ow">and</span> <span class="n">parts</span><span class="o">.</span><span class="n">password</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">url</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">parts</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">password</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">url</span><span class="p">,</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodestring</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">:</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                                           <span class="n">parts</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getpass</span><span class="p">()))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
 <div class="viewcode-block" id="Push.run_command"><a class="viewcode-back" href="../code.html#situp.Push.run_command">[docs]</a>    <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a python dictionary of the application, jsonise it and push it to</span>
 <span class="sd">        CouchDB</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">print</span> <span class="s">&quot;Running Push Command for application in </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">options</span><span class="o">.</span><span class="n">root</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&quot;Running Push Command for application in </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span>
+                <span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">)</span>
 
         <span class="n">docs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="s">&#39;_docs&#39;</span><span class="p">)</span>
         <span class="n">designs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="s">&#39;_design&#39;</span><span class="p">)</span>
@@ -456,25 +458,29 @@
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&#39;servers.json&#39;</span><span class="p">):</span>
             <span class="n">saved_servers</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;servers.json&#39;</span><span class="p">))</span>
 
-            <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">options</span><span class="o">.</span><span class="n">servers</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">saved_servers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                    <span class="n">servers_to_use</span><span class="p">[</span><span class="n">server</span><span class="p">]</span> <span class="o">=</span> <span class="n">saved_servers</span><span class="p">[</span><span class="n">server</span><span class="p">]</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">servers_to_use</span><span class="p">[</span><span class="n">server</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;url&quot;</span><span class="p">:</span> <span class="n">server</span><span class="p">}</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">_push_docs</span><span class="p">(</span><span class="n">apps_to_push</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">database</span><span class="p">,</span> <span class="n">servers_to_use</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">options</span><span class="o">.</span><span class="n">servers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">saved_servers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">servers_to_use</span><span class="p">[</span><span class="n">server</span><span class="p">]</span> <span class="o">=</span> <span class="n">saved_servers</span><span class="p">[</span><span class="n">server</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">url</span><span class="p">,</span> <span class="n">auth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_url</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
+                <span class="n">servers_to_use</span><span class="p">[</span><span class="n">server</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">auth</span><span class="p">:</span>
+                    <span class="n">servers_to_use</span><span class="p">[</span><span class="n">server</span><span class="p">][</span><span class="s">&quot;auth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">auth</span>
 
         <span class="c"># TODO: push docs here too.</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">designs</span><span class="p">):</span>
             <span class="n">list_of_designs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">designs</span><span class="p">)</span>
+
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">list_of_designs</span> <span class="o">=</span> <span class="p">[</span><span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
             <span class="k">for</span> <span class="n">design</span> <span class="ow">in</span> <span class="n">list_of_designs</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">design</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignored_files</span><span class="p">:</span>
                     <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;_design&#39;</span><span class="p">,</span> <span class="n">design</span><span class="p">)</span>
                     <span class="n">root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">designs</span><span class="p">,</span> <span class="n">design</span><span class="p">)</span>
-                    <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_walk_design</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">root</span><span class="p">)</span>
+                    <span class="n">app</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_walk_design</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">root</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
                     <span class="n">apps_to_push</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">_push_docs</span><span class="p">(</span><span class="n">apps_to_push</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">database</span><span class="p">,</span> <span class="n">servers_to_use</span><span class="p">)</span>
 
 		<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s">&#39;_docs&#39;</span><span class="p">):</span>
 			<span class="n">docs_to_push</span> <span class="o">=</span> <span class="p">[]</span>
@@ -483,50 +489,21 @@
 				<span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;_docs/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">jsonfile</span><span class="p">)</span>
 				<span class="n">docs_to_push</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
 				<span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
 			<span class="bp">self</span><span class="o">.</span><span class="n">_push_docs</span><span class="p">(</span><span class="n">docs_to_push</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">database</span><span class="p">,</span> <span class="n">servers_to_use</span><span class="p">)</span>
 </div></div>
 <div class="viewcode-block" id="Fetch"><a class="viewcode-back" href="../code.html#situp.Fetch">[docs]</a><span class="k">class</span> <span class="nc">Fetch</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Copy a remote CouchApp into the working directory.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;fetch&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;fetch&#39;</span>
+
 </div>
-<div class="viewcode-block" id="Create"><a class="viewcode-back" href="../code.html#situp.Create">[docs]</a><span class="k">class</span> <span class="nc">Create</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Create a component of a CouchApp. See View(), ListGen(), Show(), Design(),</span>
-<span class="sd">    App() and Document()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;create&quot;</span>
-    <span class="n">no_required_args</span> <span class="o">=</span> <span class="mi">2</span>
-
-    <span class="k">def</span> <span class="nf">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Give the OptionParser additional options</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c">#Create commands can add the created documents to an index</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--index&quot;</span><span class="p">,</span>
-                <span class="n">dest</span><span class="o">=</span><span class="s">&quot;index&quot;</span><span class="p">,</span>
-                <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                <span class="n">help</span><span class="o">=</span><span class="s">&quot;Add created document to an index&quot;</span><span class="p">)</span>
-
-        <span class="n">Command</span><span class="o">.</span><span class="n">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="n">commands</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot;Valid entities are: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">commands</span><span class="p">)</span>
-
-<div class="viewcode-block" id="Create.register_sub_commands"><a class="viewcode-back" href="../code.html#situp.Create.register_sub_commands">[docs]</a>    <span class="k">def</span> <span class="nf">register_sub_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set up the sub_commands and the OptionParser.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">([</span> <span class="n">View</span><span class="p">(),</span> <span class="n">ListGen</span><span class="p">(),</span> <span class="n">Show</span><span class="p">(),</span> <span class="n">Design</span><span class="p">(),</span> <span class="n">App</span><span class="p">(),</span> <span class="n">Document</span><span class="p">(),</span> <span class="n">Html</span><span class="p">()</span> <span class="p">])</span>
-
-        <span class="n">commands</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot;Valid entities are: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">commands</span><span class="p">)</span>
-</div></div>
 <div class="viewcode-block" id="InstallVendor"><a class="viewcode-back" href="../code.html#situp.InstallVendor">[docs]</a><span class="k">class</span> <span class="nc">InstallVendor</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Command to install a vendor from a remote source.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;vendor&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;vendor&quot;</span>
     <span class="n">no_required_args</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -536,8 +513,6 @@
                             <span class="s">&quot; line&quot;</span><span class="p">)</span>
 
         <span class="n">externals</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">vendor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="n">externals</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">vendor</span><span class="o">.</span><span class="n">_template</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">external</span><span class="p">,</span> <span class="n">package</span> <span class="ow">in</span> <span class="n">externals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&quot;URL&quot;</span><span class="p">,</span>
                         <span class="n">dest</span><span class="o">=</span><span class="s">&quot;alt_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
@@ -545,14 +520,12 @@
                             <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">package</span><span class="o">.</span><span class="n">url</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
 
-        <span class="n">commands</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sub_commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot;Valid vendors are: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">commands</span><span class="p">)</span>
 
-<div class="viewcode-block" id="InstallVendor.register_sub_commands"><a class="viewcode-back" href="../code.html#situp.InstallVendor.register_sub_commands">[docs]</a>    <span class="k">def</span> <span class="nf">register_sub_commands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="InstallVendor.run_command"><a class="viewcode-back" href="../code.html#situp.InstallVendor.run_command">[docs]</a>    <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set up the sub_commands and the OptionParser.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">([</span> <span class="n">Backbone</span><span class="p">(),</span> <span class="n">d3</span><span class="p">(),</span> <span class="n">BackboneCouchDB</span><span class="p">()</span> <span class="p">])</span>
+        <span class="n">vendor</span> <span class="o">=</span> <span class="n">FetchVendors</span><span class="p">()</span>
+        <span class="n">vendor</span><span class="p">()</span>
 </div></div>
 <div class="viewcode-block" id="Generator"><a class="viewcode-back" href="../code.html#situp.Generator">[docs]</a><span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -561,10 +534,10 @@
     <span class="c"># _template is a dict of filename:it&#39;s content</span>
     <span class="n">_template</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="c"># the type of thing the generator generates</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;generator_interface&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;generator_interface&quot;</span>
     <span class="n">path_elem</span> <span class="o">=</span> <span class="bp">None</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">usage</span> <span class="o">=</span> <span class="s">&quot;usage: %prog create &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">command_name</span> <span class="o">+</span> <span class="s">&quot; [options] [args]&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">usage</span> <span class="o">=</span> <span class="s">&quot;usage: %prog &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s">&quot; [options] [args]&quot;</span>
         <span class="n">Command</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Generator.run_command"><a class="viewcode-back" href="../code.html#situp.Generator.run_command">[docs]</a>    <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
@@ -573,7 +546,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c">#self.process_args(args, options)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="bp">None</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&quot;view&quot;</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
             <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">)</span>
@@ -590,7 +563,7 @@
 
             <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_elem</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">path_elem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command_name</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">path_elem</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
             <span class="n">path_elems</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">path_elem</span><span class="p">,</span> <span class="n">name</span><span class="p">])</span>
 
             <span class="k">if</span> <span class="n">misc</span><span class="p">:</span>
@@ -626,14 +599,16 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create files following _templates</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">.js&#39;</span> <span class="o">%</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;.js&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+
 </div>
 <div class="viewcode-block" id="View"><a class="viewcode-back" href="../code.html#situp.View">[docs]</a><span class="k">class</span> <span class="nc">View</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create the map.js and reduce.js files for a view. Can use built in erlang</span>
 <span class="sd">    reducers (faster) for the reduce.js (see options above).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;view&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;view&quot;</span>
     <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;views&quot;</span>
     <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s">&#39;map.js&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;&#39;function(doc){</span>
@@ -674,26 +649,49 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_write_file</span><span class="p">(</span><span class="n">reduce_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">[</span><span class="s">&#39;reduce.js&#39;</span><span class="p">])</span>
 </div>
 <span class="k">class</span> <span class="nc">ListGen</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;list&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;list&quot;</span>
+    <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;lists&quot;</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;list&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;&#39;function(doc, req) {</span>
+
+<span class="s">}&#39;&#39;&#39;</span><span class="p">}</span>
 
 <span class="k">class</span> <span class="nc">Show</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;show&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;show&quot;</span>
+    <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;shows&quot;</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;show&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;&#39;function(doc, req) {</span>
+
+<span class="s">}&#39;&#39;&#39;</span><span class="p">}</span>
+
 
 <span class="k">class</span> <span class="nc">Filter</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;filter&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;filter&quot;</span>
+    <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;filters&quot;</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;filter&#39;</span><span class="p">:</span> <span class="s">&#39;&#39;&#39;function(doc, req) {</span>
+<span class="s">  return true;</span>
+<span class="s">}&#39;&#39;&#39;</span><span class="p">}</span>
 
-<span class="k">class</span> <span class="nc">Design</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;design&quot;</span>
 
-<span class="k">class</span> <span class="nc">App</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;app&quot;</span>
+<div class="viewcode-block" id="GitHook"><a class="viewcode-back" href="../code.html#situp.GitHook">[docs]</a><span class="k">class</span> <span class="nc">GitHook</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write a post commit git hook such that situp.py push is called after git</span>
+<span class="sd">    commit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;githook&quot;</span>
+    <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;.git/hooks&quot;</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;githook&#39;</span><span class="p">:</span> <span class="s">&#39;./situp.py push&#39;</span><span class="p">}</span>
 
+    <span class="k">def</span> <span class="nf">_push_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="nb">file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;post-commit&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_file</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IXUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IWUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRUSR</span><span class="p">)</span>
+
+</div>
 <div class="viewcode-block" id="Document"><a class="viewcode-back" href="../code.html#situp.Document">[docs]</a><span class="k">class</span> <span class="nc">Document</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Create an empty json document (containing just an _id) in the _docs folder</span>
 <span class="sd">    of the application root.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;document&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;document&#39;</span>
     <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&#39;_docs&#39;</span>
     <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;document&#39;</span><span class="p">:</span> <span class="p">{}}</span>
 
@@ -720,7 +718,7 @@
 <span class="sd">    design document.</span>
 <span class="sd">    TODO: include script tags for all vendors in generated html.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;html&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&#39;html&#39;</span>
     <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&#39;_attachments&#39;</span>
     <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s">&#39;document&#39;</span><span class="p">:</span> <span class="s">&#39;&lt;html&gt;&lt;head&gt;&lt;title&gt;REPLACE&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;REPLACE&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;&#39;</span>
@@ -732,9 +730,9 @@
                     <span class="n">dest</span><span class="o">=</span><span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&quot;Name the document&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_push_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
-        <span class="n">file_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">.html&#39;</span> <span class="o">%</span> <span class="n">options</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;html&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">.html&#39;</span> <span class="o">%</span> <span class="n">options</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.htm&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">[</span><span class="s">&#39;document&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">title</span><span class="p">())</span>
+        <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">[</span><span class="s">&#39;document&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;REPLACE&#39;</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.htm&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">title</span><span class="p">())</span>
         <span class="n">doc_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">file_name</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_write_file</span><span class="p">(</span><span class="n">doc_file</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
@@ -789,78 +787,76 @@
 </div>
 <span class="n">Package</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s">&#39;Package&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;url&#39;</span><span class="p">,</span> <span class="s">&#39;filter&#39;</span><span class="p">])</span>
 
-<div class="viewcode-block" id="Vendor"><a class="viewcode-back" href="../code.html#situp.Vendor">[docs]</a><span class="k">class</span> <span class="nc">Vendor</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
+<div class="viewcode-block" id="FetchVendors"><a class="viewcode-back" href="../code.html#situp.FetchVendors">[docs]</a><span class="k">class</span> <span class="nc">FetchVendors</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Vendors are generators that download external code into the right place</span>
-
-<span class="sd">    TODO: run make/build commands as needed</span>
+<span class="sd">    Vendors are generators that download external code into the right place.</span>
+<span class="sd">    The code is held in kanso packages, and situp assumes that these have been</span>
+<span class="sd">    correctly built.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;vendor&quot;</span>
-<div class="viewcode-block" id="Vendor.run_command"><a class="viewcode-back" href="../code.html#situp.Vendor.run_command">[docs]</a>    <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;vendor&quot;</span>
+
+<div class="viewcode-block" id="FetchVendors.install_external"><a class="viewcode-back" href="../code.html#situp.FetchVendors.install_external">[docs]</a>    <span class="k">def</span> <span class="nf">install_external</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">external</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Install external &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
+                                <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">,</span>
+                                <span class="s">&#39;vendor/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">external</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Installing </span><span class="si">%s</span><span class="s"> into </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+        <span class="c"># TODO: catch not founds etc</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://kan.so/repository/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span>
+        <span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">package</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="n">latest</span> <span class="o">=</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">][</span><span class="s">&#39;latest&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;dependencies&#39;</span> <span class="ow">in</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">latest</span><span class="p">]</span> <span class="ow">and</span>\
+                <span class="nb">len</span><span class="p">(</span><span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">latest</span><span class="p">][</span><span class="s">&#39;dependencies&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Fetching dependencies for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">external</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">latest</span><span class="p">][</span><span class="s">&#39;dependencies&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">dep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="s">&#39;vendor&#39;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">install_external</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="n">archive</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">.tar.gz&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">latest</span><span class="p">)</span>
+        <span class="n">fetch_archive</span><span class="p">(</span><span class="n">url</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">archive</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Installed </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="FetchVendors.run_command"><a class="viewcode-back" href="../code.html#situp.FetchVendors.run_command">[docs]</a>    <span class="k">def</span> <span class="nf">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Vendors behave differently to other generators</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Fetching externals, may take a while&quot;</span><span class="p">)</span>
         <span class="c"># bit of a hack...</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">command_name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">external</span><span class="p">,</span> <span class="n">package</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">external</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
             <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
                                     <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">,</span>
                                     <span class="s">&#39;vendor/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">external</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Installing </span><span class="si">%s</span><span class="s"> into </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Fetching </span><span class="si">%s</span><span class="s"> from </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">package</span><span class="o">.</span><span class="n">url</span><span class="p">))</span>
-            <span class="n">fetch_archive</span><span class="p">(</span><span class="n">package</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">filter_list</span><span class="o">=</span><span class="n">package</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Installed </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
-</div></div>
-<div class="viewcode-block" id="Backbone"><a class="viewcode-back" href="../code.html#situp.Backbone">[docs]</a><span class="k">class</span> <span class="nc">Backbone</span><span class="p">(</span><span class="n">Vendor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Install Backbone Couch</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;backbone&#39;</span>
-    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s">&#39;backbone&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/documentcloud/backbone/zipball/master&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;backbone.js&#39;</span><span class="p">]),</span>
-        <span class="s">&#39;backbone.couch&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/drsm79/backbone-couch/tarball/master&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;backbone.couch.js&#39;</span><span class="p">]),</span>
-        <span class="s">&#39;underscore&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/documentcloud/underscore/tarball/master&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;underscore-min.js&#39;</span><span class="p">])</span>
-    <span class="p">}</span>
-</div>
-<div class="viewcode-block" id="BackboneCouchDB"><a class="viewcode-back" href="../code.html#situp.BackboneCouchDB">[docs]</a><span class="k">class</span> <span class="nc">BackboneCouchDB</span><span class="p">(</span><span class="n">Vendor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Install Backbone CouchDB</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;backbonecouchdb&#39;</span>
-    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s">&#39;backbone&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/documentcloud/backbone/zipball/master&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;backbone.js&#39;</span><span class="p">]),</span>
-        <span class="s">&#39;backbonecouchdb&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/janmonschke/backbone-couchdb/tarball/master&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;backbone-couchdb.js&#39;</span><span class="p">]),</span>
-        <span class="s">&#39;underscore&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/documentcloud/underscore/tarball/master&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;underscore-min.js&#39;</span><span class="p">])</span>
-    <span class="p">}</span>
+            <span class="c"># TODO: catch not founds etc</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://kan.so/repository/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;fetching from </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
+            <span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+            <span class="n">package</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;tags&#39;</span> <span class="ow">in</span> <span class="n">package</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">archive</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">.tar.gz&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">][</span><span class="s">&#39;latest&#39;</span><span class="p">])</span>
+                <span class="n">fetch_archive</span><span class="p">(</span><span class="n">url</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">archive</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Installed </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Could not retrieve package info for </span><span class="si">%s</span><span class="s"> from </span><span class="si">%s</span><span class="s">&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span>
 
-</div>
-<div class="viewcode-block" id="YUI"><a class="viewcode-back" href="../code.html#situp.YUI">[docs]</a><span class="k">class</span> <span class="nc">YUI</span><span class="p">(</span><span class="n">Vendor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Install YUI</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;yui&#39;</span>
-    <span class="n">_template</span> <span class="o">=</span> <span class="p">{}</span>
-</div>
-<div class="viewcode-block" id="Evently"><a class="viewcode-back" href="../code.html#situp.Evently">[docs]</a><span class="k">class</span> <span class="nc">Evently</span><span class="p">(</span><span class="n">Vendor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Install Evently</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;evently&#39;</span>
-    <span class="n">_template</span> <span class="o">=</span> <span class="p">{}</span>
-</div>
-<div class="viewcode-block" id="d3"><a class="viewcode-back" href="../code.html#situp.d3">[docs]</a><span class="k">class</span> <span class="nc">d3</span><span class="p">(</span><span class="n">Vendor</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Install d3</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">command_name</span> <span class="o">=</span> <span class="s">&#39;d3&#39;</span>
-    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s">&#39;d3&#39;</span> <span class="p">:</span> <span class="n">Package</span><span class="p">(</span><span class="s">&#39;https://github.com/mbostock/d3/tarball/v2.4.4&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s">&#39;min.js&#39;</span><span class="p">]),</span>
-    <span class="p">}</span>
-</div>
+</div></div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">situp</span> <span class="o">=</span> <span class="n">SitUp</span><span class="p">()</span>
-    <span class="n">situp</span><span class="p">()</span>
+
+    <span class="n">cli</span> <span class="o">=</span> <span class="n">CommandDispatch</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="p">[</span><span class="n">AddServer</span><span class="p">,</span> <span class="n">Push</span><span class="p">,</span> <span class="n">Fetch</span><span class="p">,</span> <span class="n">InstallVendor</span><span class="p">,</span> <span class="n">View</span><span class="p">,</span> <span class="n">ListGen</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span>
+            <span class="n">Document</span><span class="p">,</span> <span class="n">Html</span><span class="p">,</span> <span class="n">GitHook</span><span class="p">,</span> <span class="n">Filter</span><span class="p">]:</span>
+        <span class="n">cli</span><span class="o">.</span><span class="n">register_command</span><span class="p">(</span><span class="n">command</span><span class="p">())</span>
+
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">cli</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="n">cli</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cli</span><span class="p">()</span>
 </pre></div>
 
           </div>
@@ -894,12 +890,12 @@
         <li class="right" >
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../index.html">situp v0.1.1 documentation</a> &raquo;</li>
+        <li><a href="../index.html">situp v0.1.2 documentation</a> &raquo;</li>
           <li><a href="index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2011, Simon Metson.
+        &copy; Copyright 2011, 2012 Simon Metson.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
     </div>
   </body>

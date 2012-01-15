@@ -17,7 +17,7 @@ body {
     font-family: palatino, "times new roman", serif;
     font-size: 100%;
     background-color: #fff;
-    color: #000;
+    color: #222;
     margin: 0;
     padding: 0;
 }
@@ -27,7 +27,6 @@ div.document {
 }
 
 div.documentwrapper {
- /* background-color: #fff;*/
     float: left;
     width: 100%;
 }
@@ -39,7 +38,7 @@ div.bodywrapper {
 div.body {
     background-color: #ffffff;
     color: #000000;
-    padding: 1em;
+    padding: 1em 1em 1em 1em;
 }
 
 div.footer {
@@ -151,10 +150,10 @@ div.body h1 {
   margin-top: 1em;
   text-transform: uppercase;
 }
-div.body h2 { font-size: 1.8em; }
-div.body h3 { font-size: 1.6em; }
-div.body h4 { font-size: 1.4em; }
-div.body h5 { font-size: 1.2em; }
+div.body h2 { font-size: 1.6em; }
+div.body h3 { font-size: 1.4em; }
+div.body h4 { font-size: 1.2em; }
+div.body h5 { font-size: 1.1em; }
 div.body h6 { font-size: 1em; }
 
 a.headerlink {
@@ -219,12 +218,10 @@ p.admonition-title:after {
 
 pre {
     padding: 5px;
-    background-color: #eeffcc;
-    color: #333333;
+    background-color: #444;
+    color: #FFA500;
     line-height: 120%;
-    border: 1px solid #ac9;
-    border-left: none;
-    border-right: none;
+    border: 1px solid #999;
 }
 
 tt {
