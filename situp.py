@@ -270,6 +270,7 @@ class Push(Command):
                         conn = httplib.HTTPSConnection(server.strip('https://'))
                     else:
                         conn = httplib.HTTPConnection(server.strip('http://'))
+                    conn.putheader("User-Agent", "situp-%s" % __version__)
                     if auth:
                         conn.request(method, url, headers={"Authorization": "Basic %s" % auth})
                     else:
@@ -290,6 +291,7 @@ class Push(Command):
 
                 req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
                 req.add_header("Content-Type", "application/json")
+                req.add_header("User-Agent", "situp-%s" % __version__)
                 if 'auth' in srv.keys():
                     req.add_header("Authorization", "Basic %s" % srv['auth'])
                 data = {'docs': docs_list}
