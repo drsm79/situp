@@ -296,7 +296,7 @@
         <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-d&#39;</span><span class="p">,</span> <span class="s">&#39;--database&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;database&#39;</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s">&quot;Push the app to named database&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">CAN_MINIFY_JS</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-m&quot;</span><span class="p">,</span> <span class="s">&quot;--minify&quot;</span><span class="p">,</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-m&quot;</span><span class="p">,</span> <span class="s">&quot;--minify&quot;</span><span class="p">,</span>
                 <span class="n">dest</span><span class="o">=</span><span class="s">&quot;minify&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s">&quot;Minify javascript before pushing to database&quot;</span><span class="p">)</span>
 

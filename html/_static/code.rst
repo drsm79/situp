@@ -1,4 +1,4 @@
-situp.py public API
+``situp.py`` public API
 ========================================
 
 .. automodule:: situp

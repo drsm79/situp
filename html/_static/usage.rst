@@ -54,14 +54,14 @@ on http://kan.so/packages/ should work with situp.
 
 Defining servers
 ----------------------------------------
-situp.py lets you define servers so you can interact with them by name instead
-of URL: ::
+``situp.py`` lets you define servers so you can interact with them by name
+instead of URL: ::
 
 	situp.py addserver -n dev -s http://localhost:5984
 
-This creates a servers.json file in the current directory and stores the server
-name, url and auth token in there. **DO NOT** make your servers.json file public
-since people will be able to access your couch instances.
+This creates a ``servers.json`` file in the current directory and stores the
+server name, url and auth token in there. **DO NOT** make your ``servers.json``
+file public since people will be able to access your couch instances.
 
 Pushing to a (set of) servers
 ----------------------------------------
@@ -76,9 +76,12 @@ name: ::
 
 	situp.py push -s dev -d databasename
 
-If a server URL has a username in it (e.g. joe@localhost:5984) situp.py will
-ask for a password. This won't be stored anywhere and will not be in the shell
-history.
+If a server URL has a username in it (e.g. joe@localhost:5984) ``situp.py``
+will ask for a password. This won't be stored anywhere and will not be in the
+shell history.
+
+You can have your applications javascript minified by specifiying the ``-m``
+option with the push command.
 
 Git hook
 ----------------------------------------

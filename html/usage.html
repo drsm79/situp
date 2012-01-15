@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="situp v0.1.2 documentation" href="index.html" />
-    <link rel="next" title="situp public API" href="code.html" />
+    <link rel="next" title="situp.py public API" href="code.html" />
     <link rel="prev" title="situp.py" href="index.html" /> 
   </head>
   <body>
@@ -37,7 +37,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="code.html" title="situp public API"
+          <a href="code.html" title="situp.py public API"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="situp.py"
@@ -102,13 +102,13 @@ on <a class="reference external" href="http://kan.so/packages/">http://kan.so/pa
 </div>
 <div class="section" id="defining-servers">
 <h2>Defining servers<a class="headerlink" href="#defining-servers" title="Permalink to this headline">¶</a></h2>
-<p>situp.py lets you define servers so you can interact with them by name instead
-of URL:</p>
+<p><tt class="docutils literal"><span class="pre">situp.py</span></tt> lets you define servers so you can interact with them by name
+instead of URL:</p>
 <div class="highlight-python"><pre>situp.py addserver -n dev -s http://localhost:5984</pre>
 </div>
-<p>This creates a servers.json file in the current directory and stores the server
-name, url and auth token in there. <strong>DO NOT</strong> make your servers.json file public
-since people will be able to access your couch instances.</p>
+<p>This creates a <tt class="docutils literal"><span class="pre">servers.json</span></tt> file in the current directory and stores the
+server name, url and auth token in there. <strong>DO NOT</strong> make your <tt class="docutils literal"><span class="pre">servers.json</span></tt>
+file public since people will be able to access your couch instances.</p>
 </div>
 <div class="section" id="pushing-to-a-set-of-servers">
 <h2>Pushing to a (set of) servers<a class="headerlink" href="#pushing-to-a-set-of-servers" title="Permalink to this headline">¶</a></h2>
@@ -120,9 +120,11 @@ since people will be able to access your couch instances.</p>
 name:</p>
 <div class="highlight-python"><pre>situp.py push -s dev -d databasename</pre>
 </div>
-<p>If a server URL has a username in it (e.g. <a class="reference external" href="mailto:joe&#37;&#52;&#48;localhost">joe<span>&#64;</span>localhost</a>:5984) situp.py will
-ask for a password. This won&#8217;t be stored anywhere and will not be in the shell
-history.</p>
+<p>If a server URL has a username in it (e.g. <a class="reference external" href="mailto:joe&#37;&#52;&#48;localhost">joe<span>&#64;</span>localhost</a>:5984) <tt class="docutils literal"><span class="pre">situp.py</span></tt>
+will ask for a password. This won&#8217;t be stored anywhere and will not be in the
+shell history.</p>
+<p>You can have your applications javascript minified by specifiying the <tt class="docutils literal"><span class="pre">-m</span></tt>
+option with the push command.</p>
 </div>
 <div class="section" id="git-hook">
 <h2>Git hook<a class="headerlink" href="#git-hook" title="Permalink to this headline">¶</a></h2>
@@ -155,10 +157,10 @@ as committing to your git repository by running:</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter">situp.py</a></p>
+                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal"><span class="pre">situp.py</span></tt></a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="code.html"
-                        title="next chapter">situp public API</a></p>
+                        title="next chapter"><tt class="docutils literal docutils literal"><span class="pre">situp.py</span></tt> public API</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/usage.txt"
@@ -191,7 +193,7 @@ as committing to your git repository by running:</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="code.html" title="situp public API"
+          <a href="code.html" title="situp.py public API"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="situp.py"
