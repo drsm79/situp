@@ -604,12 +604,21 @@ class Show(Generator):
 
 class Filter(Generator):
     name = "filter"
+    path_elem = "filters"
+    _template = {'filter': '''function(doc, req) {
+  return true;
+}'''}
 
-class Design(Generator):
-    name = "design"
+    def _push_template(self, path, args, options):
+        path = os.path.join(path, '%s.js' % args[0].replace('.js', ''))
+        self._write_file(path, self._template[self.name])
 
-class App(Generator):
-    name = "app"
+    def run_command(self, args, options):
+        """
+        Run the generator
+        """
+        path = self._create_path(options.root, options.design)
+        self._push_template(path, args, options)
 
 class GitHook(Generator):
     """
@@ -792,7 +801,7 @@ if __name__ == "__main__":
 
     cli = CommandDispatch()
     for command in [AddServer, Push, Fetch, InstallVendor, View, ListGen, Show,
-            Design, App, Document, Html, GitHook]:
+            Document, Html, GitHook, Filter]:
         cli.register_command(command())
 
 
