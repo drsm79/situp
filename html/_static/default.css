@@ -218,10 +218,11 @@ p.admonition-title:after {
 
 pre {
     padding: 5px;
-    background-color: #afafaf;
+    background-color: #222;
     color: #FFA500;
     line-height: 120%;
     border: 1px solid #999;
+    font-weight:600;
 }
 
 tt {
