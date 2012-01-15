@@ -498,7 +498,7 @@ class Generator(Command):
         """
         #self.process_args(args, options)
         path = None
-        if len(args):
+        if self.name == "view" and len(args):
             path = self._create_path(options.root, options.design, args[0])
         else:
             path = self._create_path(options.root, options.design)
@@ -551,7 +551,9 @@ class Generator(Command):
         """
         Create files following _templates
         """
-        raise NotImplementedError
+        path = os.path.join(path, '%s.js' % args[0].replace('.js', ''))
+        self._write_file(path, self._template[self.name])
+
 
 class View(Generator):
     """
@@ -600,9 +602,18 @@ class View(Generator):
 
 class ListGen(Generator):
     name = "list"
+    path_elem = "lists"
+    _template = {'list': '''function(doc, req) {
+
+}'''}
 
 class Show(Generator):
     name = "show"
+    path_elem = "shows"
+    _template = {'show': '''function(doc, req) {
+
+}'''}
+
 
 class Filter(Generator):
     name = "filter"
@@ -611,16 +622,6 @@ class Filter(Generator):
   return true;
 }'''}
 
-    def _push_template(self, path, args, options):
-        path = os.path.join(path, '%s.js' % args[0].replace('.js', ''))
-        self._write_file(path, self._template[self.name])
-
-    def run_command(self, args, options):
-        """
-        Run the generator
-        """
-        path = self._create_path(options.root, options.design)
-        self._push_template(path, args, options)
 
 class GitHook(Generator):
     """
@@ -629,14 +630,11 @@ class GitHook(Generator):
     """
     name = "githook"
     path_elem = ".git/hooks"
-    _template = {'post-commit': './situp.py push'}
-    def __init__(self):
-        self.usage = "usage: %prog " + self.name
-        Command.__init__(self)
+    _template = {'githook': './situp.py push'}
 
     def _push_template(self, path, args, options):
         file = os.path.join(path, 'post-commit')
-        self._write_file(file, self._template['post-commit'])
+        self._write_file(file, self._template[self.name])
         os.chmod(file, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
 
 
