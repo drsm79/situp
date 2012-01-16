@@ -52,7 +52,7 @@ class CommandDispatch:
         else:
             usage = '%prog command [options]\n'
             usage += 'Available commands: '
-            usage += ' '.join(self.commands.keys())
+            usage += ' '.join(sorted(self.commands.keys()))
             self.parser = OptionParser(usage=usage, version=__version__)
             self.parser.parse_args()
             self.parser.print_help()
@@ -622,6 +622,19 @@ class Filter(Generator):
   return true;
 }'''}
 
+class Update(Generator):
+    name = "update"
+    path_elem = "updates"
+    _template = {'update': """function(doc, req) {
+
+}"""}
+
+class Validation(Generator):
+    name = "validation"
+    path_elem = "validate_doc_update"
+    _template = {'validation': """function(newDoc, oldDoc, userCtx) {
+  throw({forbidden : 'no way'});
+}"""}
 
 class GitHook(Generator):
     """
@@ -801,7 +814,7 @@ if __name__ == "__main__":
 
     cli = CommandDispatch()
     for command in [AddServer, Push, Fetch, InstallVendor, View, ListGen, Show,
-            Document, Html, GitHook, Filter]:
+            Document, Html, GitHook, Filter, Update, Validation]:
         cli.register_command(command())
 
 
