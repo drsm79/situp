@@ -271,11 +271,13 @@ class Push(Command):
                         conn = httplib.HTTPSConnection(server.strip('https://'))
                     else:
                         conn = httplib.HTTPConnection(server.strip('http://'))
-                    conn.putheader("User-Agent", "situp-%s" % __version__)
                     if auth:
-                        conn.request(method, url, headers={"Authorization": "Basic %s" % auth})
+                        conn.putrequest(method, url,
+                                headers={"Authorization": "Basic %s" % auth})
                     else:
-                        conn.request(method, url)
+                        conn.putrequest(method, url)
+                    conn.putheader("User-Agent", "situp-%s" % __version__)
+                    conn.endheaders()
                     response = conn.getresponse()
                     conn.close()
                     return response
@@ -302,7 +304,6 @@ class Push(Command):
             except Exception, e:
                 self.logger.error("upload to %s failed" % server)
                 self.logger.info(e)
-                self.logger.debug(data)
 
 
     def _walk_design(self, name, design, options):
