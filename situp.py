@@ -263,6 +263,7 @@ class Push(Command):
         for server in servers.keys():
             srv = servers[server]
             self.logger.info('upload to %s (%s/%s)' % (server, srv['url'], db))
+            data = {}
             try:
                 def request(server, method, url, auth=False):
                     conn = None
@@ -459,17 +460,12 @@ class InstallVendor(Command):
     no_required_args = 1
 
     def _add_options(self):
-        group = OptionGroup(self.parser, "Vendor options",
-                            "You can install vendors from non-standard "
-                            "locations by specifying the URL on the command"
-                            " line")
+        group = OptionGroup(self.parser, "Vendor options", "")
 
-        externals = {}
-        for external, package in externals.items():
-            group.add_option("--%s" % external, metavar="URL",
-                        dest="alt_%s" % external, default=False,
-                        help="Download %s from URL instead of the default [%s]"\
-                            % (external, package.url))
+        group.add_option("--ext_version",
+          default='latest', dest="ext_version",
+          help="Install a specific version of the external, default is latest")
+
         self.parser.add_option_group(group)
 
 
@@ -477,7 +473,7 @@ class InstallVendor(Command):
         """
         """
         vendor = FetchVendors()
-        vendor()
+        vendor(args, options)
 
 class Generator(Command):
     """
@@ -649,7 +645,7 @@ class GitHook(Generator):
         file = os.path.join(path, 'post-commit')
         self._write_file(file, self._template[self.name])
         os.chmod(file, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
-
+        self.logger.info("Created post-commit hook in %s" % file)
 
 class Document(Generator):
     """
@@ -761,24 +757,44 @@ class FetchVendors(Generator):
 
     name = "vendor"
 
-    def install_external(self, external, options):
+    def __call__(self, args, options):
+        """
+        Override call here - need to pass in the args/options instead of get
+        them from optparse.
+        """
+        self._configure_logger(options)
+
+        self.logger.debug('called')
+        self.logger.debug(args)
+        self.logger.debug(options)
+
+        self.run_command(args, options)
+
+    def install_external(self, external, options, vendor_path=None):
         """ Install external """
-        path = self._create_path(options.root,
-                                options.design,
-                                'vendor/%s' % external)
+        if not vendor_path:
+            vendor_path = self._create_path(options.root, options.design)
+        path = self._create_path(vendor_path, [], external)
+
         self.logger.debug('Installing %s into %s' % (external, path))
         # TODO: catch not founds etc
         url = "http://kan.so/repository/%s" % external
         (filename, response) = urllib.urlretrieve(url)
         package = json.load(open(filename))
-        latest = package['tags']['latest']
-        if 'dependencies' in package['versions'][latest] and\
-                len(package['versions'][latest]['dependencies']) > 0:
+        version = options.ext_version
+
+        if version == 'latest':
+            version = package['tags']['latest']
+        if 'dependencies' in package['versions'][version] and\
+                len(package['versions'][version]['dependencies']) > 0:
             self.logger.info('Fetching dependencies for %s' % external)
-            for dep in package['versions'][latest]['dependencies'].keys():
-                if dep not in os.listdir('vendor'):
-                    self.install_external(dep, options)
-        archive = "%s-%s.tar.gz" % (external, latest)
+            for dep in package['versions'][version]['dependencies'].keys():
+                if dep not in os.listdir(vendor_path):
+                    opt = options
+                    # TODO: work out the right version for a dependency
+                    opt.ext_version = 'latest'
+                    self.install_external(dep, options, vendor_path)
+        archive = "%s-%s.tar.gz" % (external, version)
         fetch_archive(url + '/' + archive, path)
         self.logger.info("Installed %s to %s" % (external, path))
 
@@ -788,27 +804,8 @@ class FetchVendors(Generator):
         Vendors behave differently to other generators
         """
         self.logger.warning("Fetching externals, may take a while")
-        # bit of a hack...
-        self.name = ""
         for external in args:
-            path = self._create_path(options.root,
-                                    options.design,
-                                    'vendor/%s' % external)
-            self.logger.debug('Installing %s into %s' % (external, path))
-            # TODO: catch not founds etc
-            url = "http://kan.so/repository/%s" % external
-            self.logger.debug('fetching from %s' % url)
-            (filename, response) = urllib.urlretrieve(url)
-            package = json.load(open(filename))
-            self.logger.debug(package)
-            if 'tags' in package.keys():
-                archive = "%s-%s.tar.gz" % (external, package['tags']['latest'])
-                fetch_archive(url + '/' + archive, path)
-                self.logger.info("Installed %s to %s" % (external, path))
-            else:
-                msg = 'Could not retrieve package info for %s from %s'
-                self.logger.error(msg % (external, url))
-
+            self.install_external(external, options)
 
 if __name__ == "__main__":
 
