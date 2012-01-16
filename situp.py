@@ -245,7 +245,7 @@ class Push(Command):
         group.add_option("-s", "--server",
                 dest="servers", default=[], action='append',
                 help="Push the app to one or more servers (multiple -s options are allowed)")
-        group.add_option('-d', '--database', dest='database',
+        group.add_option('-e', '--database', dest='database',
                 help="Push the app to named database")
         if CAN_MINIFY_JS:
             group.add_option("-m", "--minify",
