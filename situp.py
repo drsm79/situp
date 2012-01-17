@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 import base64
 import json
-import httplib
 import os
 import sys
 import stat
@@ -12,7 +11,7 @@ import tarfile
 import zipfile
 import shutil
 import uuid
-import mimetypes
+from mimetypes import guess_type as guess_mime_type
 import getpass
 from optparse import OptionParser, OptionGroup
 from collections import defaultdict, namedtuple
@@ -32,16 +31,18 @@ except:
 
 __version__ = "0.1.2"
 
+
 class CommandDispatch:
     def __init__(self):
         self.commands = {}
         self.default = ''
 
-    def register_command(self, command, default = False):
+    def register_command(self, command, default=False):
         self.commands[command.name.lower()] = command
-        if default: self.default = command.name.lower()
+        if default:
+            self.default = command.name.lower()
 
-    def __call__(self, command = False):
+    def __call__(self, command=False):
         if command:
             self.commands[command]()
         else:
@@ -57,6 +58,7 @@ class CommandDispatch:
             self.parser = OptionParser(usage=usage, version=__version__)
             self.parser.parse_args()
             self.parser.print_help()
+
 
 class Command:
     """
@@ -135,7 +137,6 @@ class Command:
         """
         pass
 
-
     def _default_options(self):
         group = OptionGroup(self.parser, "Base options", "")
 
@@ -176,7 +177,9 @@ class Command:
 
         self.parser.add_option_group(group)
 
+
 LocatedFile = namedtuple('LocatedFile', ['path', 'filename'])
+
 
 class AddServer(Command):
     """
@@ -195,17 +198,14 @@ class AddServer(Command):
         self.parser.add_option("-n", "--name",
                 dest="name",
                 help="The simple name server to add [required]")
-        #self.parser.add_option("--noauth",
-        #        dest="servers", default=[], action='append',
-        #        help="Push the app to one or more servers (multiple -s options are allowed)")
-
 
     def process_args(self, args=None, options=None):
         options, args = Command.process_args(self, args, options)
-        username = raw_input('Username for server, press enter for no user/password auth:')
+        msg = 'Username for server, press enter for no user/password auth:'
+        username = raw_input(msg)
         if username:
             options.auth_string = "%s" % base64.encodestring('%s:%s' % (
-                                           username, getpass.getpass())).strip()
+                                          username, getpass.getpass())).strip()
         return options, args
 
     def run_command(self, args, options):
@@ -214,7 +214,7 @@ class AddServer(Command):
             f = open('servers.json')
             servers = json.load(f)
             f.close()
-        servers[options.name] = {'url':options.server}
+        servers[options.name] = {'url': options.server}
         if options.ensure_value('auth_string', False):
             servers[options.name]['auth'] = options.auth_string
         f = open('servers.json', 'w')
@@ -237,7 +237,7 @@ class Push(Command):
         """
         Give the OptionParser additional options
         """
-        about =  "Options available to the push command."
+        about = "Options available to the push command."
         group = OptionGroup(self.parser, "Push options", about)
         group.add_option("-o", "--open",
                 dest="open_app",
@@ -245,14 +245,14 @@ class Push(Command):
                 help="Once pushed, open the application")
         group.add_option("-s", "--server",
                 dest="servers", default=[], action='append',
-                help="Push the app to one or more servers (multiple -s options are allowed)")
+                help="Push the app to servers (multiple -s options allowed)")
         group.add_option('-e', '--database', dest='database',
                 help="Push the app to named database")
+
         if CAN_MINIFY_JS:
             group.add_option("-m", "--minify",
                 dest="minify", default=False, action="store_true",
                 help="Minify javascript before pushing to database")
-
 
         self.parser.add_option_group(group)
 
@@ -268,10 +268,11 @@ class Push(Command):
             try:
                 def request(server, method, url, auth=False):
                     conn = None
+                    print server
                     if server.startswith('https://'):
-                        conn = httplib.HTTPSConnection(server.strip('https://'))
+                        conn = HTTPSConnection(server.strip('https://'))
                     else:
-                        conn = httplib.HTTPConnection(server.strip('http://'))
+                        conn = HTTPConnection(server.strip('http://'))
                     if auth:
                         conn.putrequest(method, url,
                                 headers={"Authorization": "Basic %s" % auth})
@@ -288,10 +289,12 @@ class Push(Command):
                 for doc in docs_list:
                     docid = doc['_id']
                     # HEAD the doc
-                    head = request(srv['url'], 'HEAD', "/%s/%s" % (db, docid), srv.get('auth', False))
+                    url = "/%s/%s" % (db, docid)
+                    head = request(srv['url'], 'HEAD', url, srv.get('auth', False))
                     # get its _rev, append _rev to the doc dict
                     if head.getheader('etag', False):
-                        doc['_rev'] = head.getheader('etag', False).replace('"', '')
+                        etag = head.getheader('etag', False)
+                        doc['_rev'] = etag.replace('"', '')
 
                 req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
                 req.add_header("Content-Type", "application/json")
@@ -325,12 +328,12 @@ class Push(Command):
             if self._allowed_file(path_elem):
                 return {path_elem: path_dict}
 
-        def recursive_update(a_dict, b_dict):
+        def recurse_update(a_dict, b_dict):
             for k, v in b_dict.items():
                 if k not in a_dict.keys() or type(v) != type(a_dict[k]):
                     a_dict[k] = v
                 else:
-                    a_dict[k] = recursive_update(a_dict[k], v)
+                    a_dict[k] = recurse_update(a_dict[k], v)
             return a_dict
 
         attachments = {}
@@ -350,11 +353,11 @@ class Push(Command):
                         self.logger.debug('ignoring %s' % afile)
                         continue
                     if '_attachments' in path:
-                        tmp_path = list(path) # avoid overwriting the original path var
+                        tmp_path = list(path)  # avoid overwriting original var
                         tmp_path.remove('_attachments')
                         tmp_path.append(afile)
 
-                        mime = mimetypes.guess_type(os.path.join(root, afile))[0]
+                        mime = guess_mime_type(os.path.join(root, afile))[0]
 
                         if not mime:
                             msg = 'Assuming text/plain mime type for %s'
@@ -362,14 +365,11 @@ class Push(Command):
                             mime = 'text/plain'
 
                         if options.minify and mime == "application/javascript":
-                            try:
-                                mini = jsmin(open(os.path.join(root, afile)).read())
-                                data = base64.encodestring(mini)
-                            except:
-                                self.logger.debug("Could not minify %s, uploading expanded version" % afile)
-                                data = base64.encodestring(open(os.path.join(root, afile)).read())
+                            data = self._minify(root, afile)
                         else:
-                            data = base64.encodestring(open(os.path.join(root, afile)).read())
+                            f = open(os.path.join(root, afile))
+                            data = base64.encodestring(f.read())
+                            f.close()
 
                         attachments['/'.join(tmp_path)] = {
                             'data': data,
@@ -378,15 +378,32 @@ class Push(Command):
                     else:
                         if len(path) > 0 and path[0] in ['views', 'lists',
                                 'shows', 'filters']:
-                            d[afile.strip('.js')] = open(os.path.join(root, afile)).read()
+                            f = open(os.path.join(root, afile))
+                            d[afile.strip('.js')] = f.read()
+                            f.close()
                         else:
-                            d[afile] = open(os.path.join(root, afile)).read()
+                            f = open(os.path.join(root, afile))
+                            d[afile] = f.read()
+                            f.close()
                 if d.keys():
-                    app = recursive_update(app, reduce(nest, reversed(path), d))
+                    app = recurse_update(app, reduce(nest, reversed(path), d))
 
         if attachments:
             app['_attachments'] = attachments
         return app
+
+    def _minify(self):
+        data = None
+        try:
+            f = open(os.path.join())
+            mini = jsmin(f.read())
+            data = base64.encodestring(mini)
+            f.close()
+        except:
+            msg = "Could not minify %s, uploading expanded version"
+            self.logger.debug(msg % afile)
+            data = base64.encodestring(open(os.path.join(root, afile)).read())
+        return data
 
     def _process_url(self, url):
         """ Extract auth credentials from url, if present """
@@ -394,12 +411,23 @@ class Push(Command):
         if not parts.username and not parts.password:
             return url, None
         netloc = '%s:%s' % (parts.hostname, parts.port)
-        url = urlunparse((parts.scheme, netloc, parts.path, parts.params, parts.query, parts.fragment))
+        url_tuple = (
+                    parts.scheme,
+                    netloc,
+                    parts.path,
+                    parts.params,
+                    parts.query,
+                    parts.fragment
+                    )
+        url = urlunparse(url_tuple)
         if parts.username and parts.password:
-            return url, "%s" % base64.encodestring('%s:%s' % (parts.username, parts.password)).strip()
+            auth_tuple = (parts.username, parts.password)
+            auth = base64.encodestring('%s:%s' % auth_tuple).strip()
+            return url, "%s" % auth
         else:
-            return url, "%s" % base64.encodestring('%s:%s' % (
-                                           parts.username, getpass.getpass())).strip()
+            auth_tuple = (parts.username, getpass.getpass())
+            auth = base64.encodestring('%s:%s' % auth_tuple).strip()
+            return url, "%s" % auth
 
     def run_command(self, args, options):
         """
@@ -441,17 +469,18 @@ class Push(Command):
                     app = self._walk_design(name, root, options)
                     apps_to_push.append(app)
 
-		self._push_docs(apps_to_push, options.database, servers_to_use)
+        self._push_docs(apps_to_push, options.database, servers_to_use)
 
-		if os.path.exists('_docs'):
-			docs_to_push = []
-			for jsonfile in docs:
-				# do something to check it's json
-				f = open('_docs/%s' % jsonfile)
-				docs_to_push.append(json.load(f))
-				f.close()
+        if os.path.exists('_docs'):
+            docs_to_push = []
+            for jsonfile in docs:
+                # do something to check it's json
+                f = open('_docs/%s' % jsonfile)
+                docs_to_push.append(json.load(f))
+                f.close()
 
-			self._push_docs(docs_to_push, options.database, servers_to_use)
+            self._push_docs(docs_to_push, options.database, servers_to_use)
+
 
 class Fetch(Command):
     """
@@ -476,12 +505,12 @@ class InstallVendor(Command):
 
         self.parser.add_option_group(group)
 
-
     def run_command(self, args, options):
         """
         """
         vendor = FetchVendors()
         vendor(args, options)
+
 
 class Generator(Command):
     """
@@ -492,6 +521,7 @@ class Generator(Command):
     # the type of thing the generator generates
     name = "generator_interface"
     path_elem = None
+
     def __init__(self):
         self.usage = "usage: %prog " + self.name + " [options] [args]"
         Command.__init__(self)
@@ -513,7 +543,7 @@ class Generator(Command):
         Create the path the generator needs
         """
         if os.path.exists(root):
-            path_elems =[root]
+            path_elems = [root]
             if len(design) > 1:
                 path_elems.extend(design)
 
@@ -580,15 +610,17 @@ class View(Generator):
         Allow for using a built in reduce.
         """
         self.parser.add_option("--builtin-reduce",
-                            dest="built_in", default=False,
-                            choices=['sum', 'count', 'stats'],
-                            help="Use a built in reduce (one of sum, count, stats)")
+                    dest="built_in", default=False,
+                    choices=['sum', 'count', 'stats'],
+                    help="Use a built in reduce (one of sum, count, stats)")
 
         for reducer in ['sum', 'count', 'stats']:
+            help_msg = "Use the %s built in reduce, shorthand" % reducer
+            help_msg += " for --builtin-reduce=%s" % reducer
             self.parser.add_option("--%s" % reducer,
                     dest="built_in", default=False,
                     action="store_const", const=reducer,
-                    help="Use the %s built in reduce, shorthand for --builtin-reduce=%s" % (reducer, reducer)
+                    help=help_msg
                     )
 
     def _push_template(self, path, args, options):
@@ -604,12 +636,14 @@ class View(Generator):
         else:
             self._write_file(reduce_file, self._template['reduce.js'])
 
+
 class ListGen(Generator):
     name = "list"
     path_elem = "lists"
     _template = {'list': '''function(doc, req) {
 
 }'''}
+
 
 class Show(Generator):
     name = "show"
@@ -626,6 +660,7 @@ class Filter(Generator):
   return true;
 }'''}
 
+
 class Update(Generator):
     name = "update"
     path_elem = "updates"
@@ -633,12 +668,14 @@ class Update(Generator):
 
 }"""}
 
+
 class Validation(Generator):
     name = "validation"
     path_elem = "validate_doc_update"
     _template = {'validation': """function(newDoc, oldDoc, userCtx) {
   throw({forbidden : 'no way'});
 }"""}
+
 
 class GitHook(Generator):
     """
@@ -654,6 +691,7 @@ class GitHook(Generator):
         self._write_file(file, self._template[self.name])
         os.chmod(file, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
         self.logger.info("Created post-commit hook in %s" % file)
+
 
 class Document(Generator):
     """
@@ -681,6 +719,7 @@ class Document(Generator):
 
         self._write_json(doc_file, doc)
 
+
 class Html(Document):
     """
     Create an empty html document in the _attachments folder of the specified
@@ -690,7 +729,14 @@ class Html(Document):
     name = 'html'
     path_elem = '_attachments'
     _template = {
-        'document': '<html><head><title>REPLACE</title></head><body><h1>REPLACE</h1></body></html>'
+        'document': '''<html>
+    <head>
+        <title>REPLACE</title>
+    </head>
+    <body>
+        <h1>REPLACE</h1>
+    </body>
+</html>'''
     }
     required_opts = ['name']
 
@@ -700,15 +746,17 @@ class Html(Document):
 
     def _push_template(self, path, args, options):
         file_name = '%s.html' % options.name.split('.htm')[0]
-
-        doc = self._template['document'].replace('REPLACE', options.name.split('.htm')[0].title())
+        title = options.name.split('.htm')[0].title()
+        doc = self._template['document'].replace('REPLACE', title)
         doc_file = os.path.join(path, file_name)
 
         self._write_file(doc_file, doc)
 
+
 def fetch_archive(url, path, filter_list=[]):
     """
-    Fetch a remote tar/zip archive and extract it, applying a filter if one is provided.
+    Fetch a remote tar/zip archive and extract it, applying a filter if one is
+    provided.
     """
     (filename, response) = urllib.urlretrieve(url)
     subfolder = ""
@@ -749,12 +797,14 @@ def fetch_archive(url, path, filter_list=[]):
     os.mkdir(dest)
     for sfile in os.listdir(os.path.join(path, subfolder)):
         source = os.path.join(path, subfolder, sfile)
-        shutil.move(source, dest) #, sfile
-        #copyfile
+        shutil.move(source, dest)
+
     shutil.rmtree(os.path.join(path, subfolder))
     os.remove(filename)
 
+
 Package = namedtuple('Package', ['url', 'filter'])
+
 
 class FetchVendors(Generator):
     """
@@ -806,7 +856,6 @@ class FetchVendors(Generator):
         fetch_archive(url + '/' + archive, path)
         self.logger.info("Installed %s to %s" % (external, path))
 
-
     def run_command(self, args, options):
         """
         Vendors behave differently to other generators
@@ -815,16 +864,14 @@ class FetchVendors(Generator):
         for external in args:
             self.install_external(external, options)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     cli = CommandDispatch()
     for command in [AddServer, Push, Fetch, InstallVendor, View, ListGen, Show,
             Document, Html, GitHook, Filter, Update, Validation]:
         cli.register_command(command())
 
-
     if len(sys.argv) > 1 and sys.argv[1] in cli.commands.keys():
         cli(sys.argv[1])
     else:
         cli()
-
