@@ -20,6 +20,7 @@ from urlparse import urlunparse, urlparse
 from httplib import HTTPConnection
 from httplib import HTTPSConnection
 from httplib import HTTPException
+from fnmatch import fnmatch
 
 CAN_MINIFY_JS = False
 
@@ -220,6 +221,7 @@ class AddServer(Command):
         json.dump(servers, f)
         f.close()
 
+
 class Push(Command):
     """
     The Push command sends the application to the CouchDB server. Specify a
@@ -229,8 +231,7 @@ class Push(Command):
     name = 'push'
     no_required_args = 0
     #TODO: pick this up from config
-    #TODO: support regexp
-    ignored_files = ['.DS_Store', '.cvs', '.svn', '.hg', '.git']
+    ignored_files = ['.DS_Store', '.cvs', '.svn', '.hg', '.git', '*.swp']
 
     def _add_options(self):
         """
@@ -305,18 +306,23 @@ class Push(Command):
                 self.logger.error("upload to %s failed" % server)
                 self.logger.info(e)
 
+    def _allowed_file(self, filepath):
+        """
+        Check that filepath isn't in self.ignored_files, return True if the
+        file is allowed.
+        """
+        return True not in [fnmatch(filepath, r) for r in self.ignored_files]
 
     def _walk_design(self, name, design, options):
         """
         Walk through the design document, building a dictionary as it goes.
         """
 
-
         def nest(path_dict, path_elem):
             """
             Build the required nested data structure
             """
-            if path_elem not in self.ignored_files:
+            if self._allowed_file(path_elem):
                 return {path_elem: path_dict}
 
         def recursive_update(a_dict, b_dict):
@@ -332,14 +338,15 @@ class Push(Command):
         for root, dirs, files in os.walk(design):
             path = root.split(name)[1].split('/')[1:]
             for walkeddir in dirs:
-                if walkeddir in self.ignored_files:
+                if not self._allowed_file(walkeddir):
+                    # remove a directory if it's not allowed
                     self.logger.debug('ignoring %s' % os.path.join(root,
                         walkeddir))
                     dirs.remove(walkeddir)
             if files:
                 d = {}
                 for afile in files:
-                    if afile in self.ignored_files:
+                    if not self._allowed_file(afile):
                         self.logger.debug('ignoring %s' % afile)
                         continue
                     if '_attachments' in path:
@@ -428,7 +435,7 @@ class Push(Command):
             if len(options.design) > 1:
                 list_of_designs = [options.design[1]]
             for design in list_of_designs:
-                if design not in self.ignored_files:
+                if self._allowed_file(design):
                     name = os.path.join('_design', design)
                     root = os.path.join(designs, design)
                     app = self._walk_design(name, root, options)
