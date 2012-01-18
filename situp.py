@@ -473,11 +473,15 @@ class Push(Command):
 
         if os.path.exists('_docs'):
             docs_to_push = []
-            for jsonfile in docs:
+            for jsonfile in os.listdir('_docs'):
+                if self._allowed_file(jsonfile):
                 # do something to check it's json
-                f = open('_docs/%s' % jsonfile)
-                docs_to_push.append(json.load(f))
-                f.close()
+                    try:
+                        f = open('_docs/%s' % jsonfile)
+                        docs_to_push.append(json.load(f))
+                        f.close()
+                    except:
+                        self.logger.info('could not upload %s' % jsonfile)
 
             self._push_docs(docs_to_push, options.database, servers_to_use)
 
