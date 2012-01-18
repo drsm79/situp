@@ -9,10 +9,17 @@ that a lot of code would be necessary to override distutils behaviour. So now
 situp.py is just another CouchApp client (and an excuse to experiment with a
 few things).
 
-A key feature of situp is that it's only dependency is python - this makes it 
-easy to use in automated test/install situations. If you don't want to use 
+A key feature of situp is that it's only dependency is python - this makes it
+easy to use in automated test/install situations. If you don't want to use
 minification it's a single file.
 
+Key features
+----------------------------------------
+ * single file, 0 dependencies
+ * support Kanso packages
+ * manage multiple design documents
+ * push to multiple servers from one call
+ * don't expose passwords to screen
 
 Documentation
 ----------------------------------------
@@ -24,3 +31,4 @@ following command in the situp directory:
 
 Or read it online http://drsm79.github.com/situp/html/ (this may lag checked
 out code until I automate the doc building).
+
