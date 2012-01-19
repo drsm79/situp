@@ -268,7 +268,6 @@ class Push(Command):
             try:
                 def request(server, method, url, auth=False):
                     conn = None
-                    print server
                     if server.startswith('https://'):
                         conn = HTTPSConnection(server.strip('https://'))
                     else:
@@ -456,34 +455,36 @@ class Push(Command):
                 if auth:
                     servers_to_use[server]["auth"] = auth
 
-        # TODO: push docs here too.
-        if os.path.exists(designs):
-            list_of_designs = os.listdir(designs)
+        if len(servers_to_use.keys()) > 0:
+            if os.path.exists(designs):
+                list_of_designs = os.listdir(designs)
 
-            if len(options.design) > 1:
-                list_of_designs = [options.design[1]]
-            for design in list_of_designs:
-                if self._allowed_file(design):
-                    name = os.path.join('_design', design)
-                    root = os.path.join(designs, design)
-                    app = self._walk_design(name, root, options)
-                    apps_to_push.append(app)
+                if len(options.design) > 1:
+                    list_of_designs = [options.design[1]]
+                for design in list_of_designs:
+                    if self._allowed_file(design):
+                        name = os.path.join('_design', design)
+                        root = os.path.join(designs, design)
+                        app = self._walk_design(name, root, options)
+                        apps_to_push.append(app)
 
-        self._push_docs(apps_to_push, options.database, servers_to_use)
+            self._push_docs(apps_to_push, options.database, servers_to_use)
 
-        if os.path.exists('_docs'):
-            docs_to_push = []
-            for jsonfile in os.listdir('_docs'):
-                if self._allowed_file(jsonfile):
-                # do something to check it's json
-                    try:
-                        f = open('_docs/%s' % jsonfile)
-                        docs_to_push.append(json.load(f))
-                        f.close()
-                    except:
-                        self.logger.info('could not upload %s' % jsonfile)
+            if os.path.exists(docs):
+                docs_to_push = []
+                for jsonfile in os.listdir(docs):
+                    if self._allowed_file(jsonfile):
+                    # do something to check it's json
+                        try:
+                            f = open('%s/%s' % (docs,jsonfile))
+                            docs_to_push.append(json.load(f))
+                            f.close()
+                        except:
+                            self.logger.info('could not read %s' % jsonfile)
 
-            self._push_docs(docs_to_push, options.database, servers_to_use)
+                self._push_docs(docs_to_push, options.database, servers_to_use)
+        else:
+            self.logger.warning('No servers specified - add -s server_url')
 
 
 class Fetch(Command):
