@@ -286,14 +286,15 @@ class Push(Command):
                 request(srv['url'], 'PUT', "/%s" % db, srv.get('auth', False))
 
                 for doc in docs_list:
-                    docid = doc['_id']
-                    # HEAD the doc
-                    url = "/%s/%s" % (db, docid)
-                    head = request(srv['url'], 'HEAD', url, srv.get('auth', False))
-                    # get its _rev, append _rev to the doc dict
-                    if head.getheader('etag', False):
-                        etag = head.getheader('etag', False)
-                        doc['_rev'] = etag.replace('"', '')
+                    if '_id' in doc.keys():
+                        docid = doc['_id']
+                        # HEAD the doc
+                        url = "/%s/%s" % (db, docid)
+                        head = request(srv['url'], 'HEAD', url, srv.get('auth', False))
+                        # get its _rev, append _rev to the doc dict
+                        if head.getheader('etag', False):
+                            etag = head.getheader('etag', False)
+                            doc['_rev'] = etag.replace('"', '')
 
                 req = urllib2.Request('%s/%s/_bulk_docs' % (srv['url'], db))
                 req.add_header("Content-Type", "application/json")
