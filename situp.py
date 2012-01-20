@@ -645,7 +645,7 @@ class View(Generator):
 class ListGen(Generator):
     name = "list"
     path_elem = "lists"
-    _template = {'list': '''function(doc, req) {
+    _template = {'list': '''function(head, req) {
 
 }'''}
 
