@@ -272,11 +272,9 @@ class Push(Command):
                         conn = HTTPSConnection(server.strip('https://'))
                     else:
                         conn = HTTPConnection(server.strip('http://'))
+                    conn.putrequest(method, url)
                     if auth:
-                        conn.putrequest(method, url,
-                                headers={"Authorization": "Basic %s" % auth})
-                    else:
-                        conn.putrequest(method, url)
+                        conn.putheader("Authorization", "Basic %s" % auth)
                     conn.putheader("User-Agent", "situp-%s" % __version__)
                     conn.endheaders()
                     response = conn.getresponse()
@@ -410,7 +408,10 @@ class Push(Command):
         parts = urlparse(url)
         if not parts.username and not parts.password:
             return url, None
-        netloc = '%s:%s' % (parts.hostname, parts.port)
+        if parts.port:
+            netloc = '%s:%s' % (parts.hostname, parts.port)
+        else:
+            netloc = parts.hostname
         url_tuple = (
                     parts.scheme,
                     netloc,
