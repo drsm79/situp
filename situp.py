@@ -647,7 +647,15 @@ class ListGen(Generator):
     name = "list"
     path_elem = "lists"
     _template = {'list': '''function(head, req) {
-
+  var row;
+  start({
+    "headers": {
+      "Content-Type": "text/html"
+     }
+  });
+  while(row = getRow()) {
+    send(row.value);
+  }
 }'''}
 
 
