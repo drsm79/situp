@@ -517,6 +517,35 @@ class Fetch(Command):
     """
     name = 'fetch'
 
+    def _add_options(self):
+        group = OptionGroup(self.parser, "Fetch options", "")
+
+    def run_command(self, args, options):
+        """
+        """
+        url = args[0]
+        d = json.load(urllib.urlopen('%s/_all_docs?include_docs=true' % url))
+        app = [d['doc'] for d in d['rows']]
+        print app
+        if not os.path.exists('_docs'): os.mkdir('_docs')
+        for doc in app:
+            # TODO: have this be optional
+            del doc['_rev']
+            id = str(doc['_id'])
+            attachments = doc.get('_attachments', {})
+            del doc['_attachments']
+            f = open(os.path.join('_docs', '%s.json' % id), 'w')
+            json.dump(doc, f)
+            f.close()
+            att_dir = os.path.join('_docs', id)
+            if len(attachments) and not os.path.exists(att_dir):
+                os.mkdir(att_dir)
+            for att in attachments.keys():
+                print att
+                a_file = os.path.join(att_dir, att)
+                urllib.urlretrieve('%s/%s/%s' % (url, id, att), a_file)
+
+
 
 class InstallVendor(Command):
     """
