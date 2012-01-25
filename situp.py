@@ -314,6 +314,32 @@ class Push(Command):
         """
         return True not in [fnmatch(filepath, r) for r in self.ignored_files]
 
+    def _attach(self, afile, path, minify=False):
+        """
+        Takes a path to a file, works out it's mime type (assumes text/plain if
+        it can't be determined) and returns the necessary dict to upload to a
+        doc.
+        """
+        mime = guess_mime_type(afile)[0]
+
+        if not mime:
+            msg = 'Assuming text/plain mime type for %s'
+            self.logger.warning(msg % afile)
+            mime = 'text/plain'
+
+        if minify and mime == "application/javascript":
+            data = self._minify(path, afile)
+        else:
+            f = open(os.path.join(path, afile))
+            data = base64.encodestring(f.read())
+            f.close()
+
+        return {afile: {
+                'data': data,
+                'content_type': mime
+                }}
+
+
     def _walk_design(self, name, design, options):
         """
         Walk through the design document, building a dictionary as it goes.
@@ -338,15 +364,15 @@ class Push(Command):
         app = {'_id': name}
         for root, dirs, files in os.walk(design):
             path = root.split(name)[1].split('/')[1:]
-            for walkeddir in dirs:
-                if not self._allowed_file(walkeddir):
-                    # remove a directory if it's not allowed
-                    self.logger.debug('ignoring %s' % os.path.join(root,
-                        walkeddir))
-                    dirs.remove(walkeddir)
+            for walkeddir in filter(self._allowed_file, dirs):
+                # remove a directory if it's not allowed
+                self.logger.debug('ignoring %s' % os.path.join(root,
+                    walkeddir))
+                dirs.remove(walkeddir)
             if files:
                 d = {}
                 for afile in files:
+                    afile_path = os.path.join(root, afile)
                     if not self._allowed_file(afile):
                         self.logger.debug('ignoring %s' % afile)
                         continue
@@ -354,33 +380,16 @@ class Push(Command):
                         tmp_path = list(path)  # avoid overwriting original var
                         tmp_path.remove('_attachments')
                         tmp_path.append(afile)
-
-                        mime = guess_mime_type(os.path.join(root, afile))[0]
-
-                        if not mime:
-                            msg = 'Assuming text/plain mime type for %s'
-                            self.logger.warning(msg % afile)
-                            mime = 'text/plain'
-
-                        if options.minify and mime == "application/javascript":
-                            data = self._minify(root, afile)
-                        else:
-                            f = open(os.path.join(root, afile))
-                            data = base64.encodestring(f.read())
-                            f.close()
-
-                        attachments['/'.join(tmp_path)] = {
-                            'data': data,
-                            'content_type': mime
-                        }
+                        attach = self._attach(afile_path, tmp_path, options.minify)
+                        attachments.update(attach)
                     else:
                         if len(path) > 0 and path[0] in ['views', 'lists',
                                 'shows', 'filters']:
-                            f = open(os.path.join(root, afile))
+                            f = open(afile_path)
                             d[afile.strip('.js')] = f.read()
                             f.close()
                         else:
-                            f = open(os.path.join(root, afile))
+                            f = open(afile_path)
                             d[afile] = f.read()
                             f.close()
                 if d.keys():
@@ -463,28 +472,39 @@ class Push(Command):
 
                 if len(options.design) > 1:
                     list_of_designs = [options.design[1]]
-                for design in list_of_designs:
-                    if self._allowed_file(design):
-                        name = os.path.join('_design', design)
-                        root = os.path.join(designs, design)
-                        app = self._walk_design(name, root, options)
-                        apps_to_push.append(app)
+                for design in filter(self._allowed_file, list_of_designs):
+                    name = os.path.join('_design', design)
+                    root = os.path.join(designs, design)
+                    app = self._walk_design(name, root, options)
+                    apps_to_push.append(app)
 
             self._push_docs(apps_to_push, options.database, servers_to_use)
 
             if os.path.exists(docs):
-                docs_to_push = []
-                for jsonfile in os.listdir(docs):
-                    if self._allowed_file(jsonfile):
-                    # do something to check it's json
+                docs_to_push = defaultdict(dict)
+                l_dir =  os.listdir(docs)
+                for file in filter(self._allowed_file, l_dir):
+                    file_path = os.path.join(docs, file)
+
+                    if file.endswith('.json'):
+                        # do something to check it's json
                         try:
-                            f = open('%s/%s' % (docs,jsonfile))
-                            docs_to_push.append(json.load(f))
+                            f = open(file_path)
+                            docs_to_push[file].update(json.load(f))
                             f.close()
                         except:
-                            self.logger.info('could not read %s' % jsonfile)
-
-                self._push_docs(docs_to_push, options.database, servers_to_use)
+                            self.logger.info('could not read %s' % file)
+                    elif os.path.isdir(file_path) and '%s.json' % file in l_dir:
+                    # Assume directory contents are attachments
+                        attachments = os.listdir(file_path)
+                        key = '%s.json' % file
+                        att = {}
+                        for a in filter(self._allowed_file, attachments):
+                            att.update(self._attach(a, file_path,
+                                options.minify))
+                        docs_to_push[key].update({'_attachments':att})
+                self._push_docs(docs_to_push.values(), options.database,
+                        servers_to_use)
         else:
             self.logger.warning('No servers specified - add -s server_url')
 
