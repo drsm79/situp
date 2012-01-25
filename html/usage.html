@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="situp v0.1.2 documentation" href="index.html" />
-    <link rel="next" title="situp.py public API" href="code.html" />
+    <link rel="next" title="Command line interface" href="cli.html" />
     <link rel="prev" title="situp.py" href="index.html" /> 
   </head>
   <body>
@@ -37,7 +37,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="code.html" title="situp.py public API"
+          <a href="cli.html" title="Command line interface"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="situp.py"
@@ -126,6 +126,33 @@ shell history.</p>
 <p>You can have your applications javascript minified by specifiying the <tt class="docutils literal"><span class="pre">-m</span></tt>
 option with the push command.</p>
 </div>
+<div class="section" id="uploading-documents-and-attachments">
+<h2>Uploading documents (and attachments)<a class="headerlink" href="#uploading-documents-and-attachments" title="Permalink to this headline">¶</a></h2>
+<p>You might want to upload documents with <tt class="docutils literal"><span class="pre">situp.py</span></tt>; because you are restoring
+from backup or need to seed the database with some default documents. This is
+managed via the push command, and assumes a certain structure for your
+documents.</p>
+<p>Any .json file in $APP_DIRECTORY/_docs will be uploaded when the <tt class="docutils literal"><span class="pre">situp.py</span>
+<span class="pre">push</span></tt> command is executed. If you would like to attach files to those
+documents create a directory with the same name as the file (minus the .json
+extension) and put the files you want to attach in there.</p>
+<p>For example, say I had a doc called <tt class="docutils literal"><span class="pre">foo.json</span></tt> and another called <tt class="docutils literal"><span class="pre">bar.json</span></tt>
+and I wanted to attach an image (<tt class="docutils literal"><span class="pre">unicorn.png</span></tt>) to <tt class="docutils literal"><span class="pre">foo.json</span></tt>, I would need
+to create a directory structure like:</p>
+<div class="highlight-python"><pre>_docs
+  \-------- foo.json
+  +-------- foo
+            \--------unicorn.png
+  +-------- bar.json</pre>
+</div>
+</div>
+<div class="section" id="fetching-an-app">
+<h2>Fetching an app<a class="headerlink" href="#fetching-an-app" title="Permalink to this headline">¶</a></h2>
+<p>You can pull a remote app into your current working directory by invoking:</p>
+<div class="highlight-python"><pre>situp.py fetch http://foo.com/app_i_want</pre>
+</div>
+<p>This will retrieve the app and all associated data.</p>
+</div>
 <div class="section" id="git-hook">
 <h2>Git hook<a class="headerlink" href="#git-hook" title="Permalink to this headline">¶</a></h2>
 <p>You can install a git post commit hook to push to your server at the same time
@@ -150,6 +177,8 @@ as committing to your git repository by running:</p>
 <li><a class="reference internal" href="#importing-a-vendor">Importing a vendor</a></li>
 <li><a class="reference internal" href="#defining-servers">Defining servers</a></li>
 <li><a class="reference internal" href="#pushing-to-a-set-of-servers">Pushing to a (set of) servers</a></li>
+<li><a class="reference internal" href="#uploading-documents-and-attachments">Uploading documents (and attachments)</a></li>
+<li><a class="reference internal" href="#fetching-an-app">Fetching an app</a></li>
 <li><a class="reference internal" href="#git-hook">Git hook</a></li>
 </ul>
 </li>
@@ -157,10 +186,10 @@ as committing to your git repository by running:</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal"><span class="pre">situp.py</span></tt></a></p>
+                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal docutils literal"><span class="pre">situp.py</span></tt></a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="code.html"
-                        title="next chapter"><tt class="docutils literal docutils literal"><span class="pre">situp.py</span></tt> public API</a></p>
+  <p class="topless"><a href="cli.html"
+                        title="next chapter">Command line interface</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/usage.txt"
@@ -193,7 +222,7 @@ as committing to your git repository by running:</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="code.html" title="situp.py public API"
+          <a href="cli.html" title="Command line interface"
              >next</a> |</li>
         <li class="right" >
           <a href="index.html" title="situp.py"

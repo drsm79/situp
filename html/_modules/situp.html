@@ -68,6 +68,7 @@
 <span class="kn">from</span> <span class="nn">httplib</span> <span class="kn">import</span> <span class="n">HTTPConnection</span>
 <span class="kn">from</span> <span class="nn">httplib</span> <span class="kn">import</span> <span class="n">HTTPSConnection</span>
 <span class="kn">from</span> <span class="nn">httplib</span> <span class="kn">import</span> <span class="n">HTTPException</span>
+<span class="kn">from</span> <span class="nn">StringIO</span> <span class="kn">import</span> <span class="n">StringIO</span>
 
 <span class="n">CAN_MINIFY_JS</span> <span class="o">=</span> <span class="bp">False</span>
 
@@ -100,7 +101,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">usage</span> <span class="o">=</span> <span class="s">&#39;%prog command [options]</span><span class="se">\n</span><span class="s">&#39;</span>
             <span class="n">usage</span> <span class="o">+=</span> <span class="s">&#39;Available commands: &#39;</span>
-            <span class="n">usage</span> <span class="o">+=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">usage</span> <span class="o">+=</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parser</span> <span class="o">=</span> <span class="n">OptionParser</span><span class="p">(</span><span class="n">usage</span><span class="o">=</span><span class="n">usage</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
@@ -131,6 +132,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">epilog</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__doc__</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_options</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="s">&quot; &quot;</span>
 
     <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -184,7 +187,7 @@
 
 
     <span class="k">def</span> <span class="nf">_default_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Base options&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Base options&quot;</span><span class="p">,</span> <span class="s">&quot;Default options&quot;</span><span class="p">)</span>
 
         <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--quiet&quot;</span><span class="p">,</span>
                 <span class="n">action</span><span class="o">=</span><span class="s">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;quiet&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
@@ -293,7 +296,7 @@
         <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-s&quot;</span><span class="p">,</span> <span class="s">&quot;--server&quot;</span><span class="p">,</span>
                 <span class="n">dest</span><span class="o">=</span><span class="s">&quot;servers&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;append&#39;</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s">&quot;Push the app to one or more servers (multiple -s options are allowed)&quot;</span><span class="p">)</span>
-        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-d&#39;</span><span class="p">,</span> <span class="s">&#39;--database&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;database&#39;</span><span class="p">,</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&#39;-e&#39;</span><span class="p">,</span> <span class="s">&#39;--database&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&#39;database&#39;</span><span class="p">,</span>
                 <span class="n">help</span><span class="o">=</span><span class="s">&quot;Push the app to named database&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">CAN_MINIFY_JS</span><span class="p">:</span>
             <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;-m&quot;</span><span class="p">,</span> <span class="s">&quot;--minify&quot;</span><span class="p">,</span>
@@ -311,6 +314,7 @@
         <span class="k">for</span> <span class="n">server</span> <span class="ow">in</span> <span class="n">servers</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="n">srv</span> <span class="o">=</span> <span class="n">servers</span><span class="p">[</span><span class="n">server</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;upload to </span><span class="si">%s</span><span class="s"> (</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">srv</span><span class="p">[</span><span class="s">&#39;url&#39;</span><span class="p">],</span> <span class="n">db</span><span class="p">))</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">auth</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
                     <span class="n">conn</span> <span class="o">=</span> <span class="bp">None</span>
@@ -318,11 +322,13 @@
                         <span class="n">conn</span> <span class="o">=</span> <span class="n">httplib</span><span class="o">.</span><span class="n">HTTPSConnection</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;https://&#39;</span><span class="p">))</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">conn</span> <span class="o">=</span> <span class="n">httplib</span><span class="o">.</span><span class="n">HTTPConnection</span><span class="p">(</span><span class="n">server</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;http://&#39;</span><span class="p">))</span>
-                    <span class="n">conn</span><span class="o">.</span><span class="n">putheader</span><span class="p">(</span><span class="s">&quot;User-Agent&quot;</span><span class="p">,</span> <span class="s">&quot;situp-</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">__version__</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">auth</span><span class="p">:</span>
-                        <span class="n">conn</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;Authorization&quot;</span><span class="p">:</span> <span class="s">&quot;Basic </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">auth</span><span class="p">})</span>
+                        <span class="n">conn</span><span class="o">.</span><span class="n">putrequest</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span>
+                                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s">&quot;Authorization&quot;</span><span class="p">:</span> <span class="s">&quot;Basic </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">auth</span><span class="p">})</span>
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="n">conn</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+                        <span class="n">conn</span><span class="o">.</span><span class="n">putrequest</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+                    <span class="n">conn</span><span class="o">.</span><span class="n">putheader</span><span class="p">(</span><span class="s">&quot;User-Agent&quot;</span><span class="p">,</span> <span class="s">&quot;situp-</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">__version__</span><span class="p">)</span>
+                    <span class="n">conn</span><span class="o">.</span><span class="n">endheaders</span><span class="p">()</span>
                     <span class="n">response</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">getresponse</span><span class="p">()</span>
                     <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
                     <span class="k">return</span> <span class="n">response</span>
@@ -349,7 +355,6 @@
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s">&quot;upload to </span><span class="si">%s</span><span class="s"> failed&quot;</span> <span class="o">%</span> <span class="n">server</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
 
     <span class="k">def</span> <span class="nf">_walk_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">design</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
@@ -507,17 +512,12 @@
     <span class="n">no_required_args</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_add_options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Vendor options&quot;</span><span class="p">,</span>
-                            <span class="s">&quot;You can install vendors from non-standard &quot;</span>
-                            <span class="s">&quot;locations by specifying the URL on the command&quot;</span>
-                            <span class="s">&quot; line&quot;</span><span class="p">)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">OptionGroup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="p">,</span> <span class="s">&quot;Vendor options&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
 
-        <span class="n">externals</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">external</span><span class="p">,</span> <span class="n">package</span> <span class="ow">in</span> <span class="n">externals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span><span class="p">,</span> <span class="n">metavar</span><span class="o">=</span><span class="s">&quot;URL&quot;</span><span class="p">,</span>
-                        <span class="n">dest</span><span class="o">=</span><span class="s">&quot;alt_</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-                        <span class="n">help</span><span class="o">=</span><span class="s">&quot;Download </span><span class="si">%s</span><span class="s"> from URL instead of the default [</span><span class="si">%s</span><span class="s">]&quot;</span>\
-                            <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">package</span><span class="o">.</span><span class="n">url</span><span class="p">))</span>
+        <span class="n">group</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--ext_version&quot;</span><span class="p">,</span>
+          <span class="n">default</span><span class="o">=</span><span class="s">&#39;latest&#39;</span><span class="p">,</span> <span class="n">dest</span><span class="o">=</span><span class="s">&quot;ext_version&quot;</span><span class="p">,</span>
+          <span class="n">help</span><span class="o">=</span><span class="s">&quot;Install a specific version of the external, default is latest&quot;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">add_option_group</span><span class="p">(</span><span class="n">group</span><span class="p">)</span>
 
 
@@ -525,7 +525,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">vendor</span> <span class="o">=</span> <span class="n">FetchVendors</span><span class="p">()</span>
-        <span class="n">vendor</span><span class="p">()</span>
+        <span class="n">vendor</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
 </div></div>
 <div class="viewcode-block" id="Generator"><a class="viewcode-back" href="../code.html#situp.Generator">[docs]</a><span class="k">class</span> <span class="nc">Generator</span><span class="p">(</span><span class="n">Command</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -670,6 +670,19 @@
 <span class="s">  return true;</span>
 <span class="s">}&#39;&#39;&#39;</span><span class="p">}</span>
 
+<span class="k">class</span> <span class="nc">Update</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;update&quot;</span>
+    <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;updates&quot;</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;update&#39;</span><span class="p">:</span> <span class="s">&quot;&quot;&quot;function(doc, req) {</span>
+
+<span class="s">}&quot;&quot;&quot;</span><span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">Validation</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;validation&quot;</span>
+    <span class="n">path_elem</span> <span class="o">=</span> <span class="s">&quot;validate_doc_update&quot;</span>
+    <span class="n">_template</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;validation&#39;</span><span class="p">:</span> <span class="s">&quot;&quot;&quot;function(newDoc, oldDoc, userCtx) {</span>
+<span class="s">  throw({forbidden : &#39;no way&#39;});</span>
+<span class="s">}&quot;&quot;&quot;</span><span class="p">}</span>
 
 <div class="viewcode-block" id="GitHook"><a class="viewcode-back" href="../code.html#situp.GitHook">[docs]</a><span class="k">class</span> <span class="nc">GitHook</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -684,7 +697,7 @@
         <span class="nb">file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s">&#39;post-commit&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_write_file</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">])</span>
         <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="nb">file</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IXUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IWUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRUSR</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Created post-commit hook in </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">file</span><span class="p">)</span>
 </div>
 <div class="viewcode-block" id="Document"><a class="viewcode-back" href="../code.html#situp.Document">[docs]</a><span class="k">class</span> <span class="nc">Document</span><span class="p">(</span><span class="n">Generator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -796,24 +809,44 @@
 
     <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;vendor&quot;</span>
 
-<div class="viewcode-block" id="FetchVendors.install_external"><a class="viewcode-back" href="../code.html#situp.FetchVendors.install_external">[docs]</a>    <span class="k">def</span> <span class="nf">install_external</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">external</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override call here - need to pass in the args/options instead of get</span>
+<span class="sd">        them from optparse.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_configure_logger</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;called&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FetchVendors.install_external"><a class="viewcode-back" href="../code.html#situp.FetchVendors.install_external">[docs]</a>    <span class="k">def</span> <span class="nf">install_external</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">external</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">vendor_path</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Install external &quot;&quot;&quot;</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
-                                <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">,</span>
-                                <span class="s">&#39;vendor/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">external</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">vendor_path</span><span class="p">:</span>
+            <span class="n">vendor_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">vendor_path</span><span class="p">,</span> <span class="p">[],</span> <span class="n">external</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Installing </span><span class="si">%s</span><span class="s"> into </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
         <span class="c"># TODO: catch not founds etc</span>
         <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://kan.so/repository/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span>
         <span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
         <span class="n">package</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
-        <span class="n">latest</span> <span class="o">=</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">][</span><span class="s">&#39;latest&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="s">&#39;dependencies&#39;</span> <span class="ow">in</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">latest</span><span class="p">]</span> <span class="ow">and</span>\
-                <span class="nb">len</span><span class="p">(</span><span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">latest</span><span class="p">][</span><span class="s">&#39;dependencies&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">ext_version</span>
+
+        <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="s">&#39;latest&#39;</span><span class="p">:</span>
+            <span class="n">version</span> <span class="o">=</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">][</span><span class="s">&#39;latest&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;dependencies&#39;</span> <span class="ow">in</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">version</span><span class="p">]</span> <span class="ow">and</span>\
+                <span class="nb">len</span><span class="p">(</span><span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">version</span><span class="p">][</span><span class="s">&#39;dependencies&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&#39;Fetching dependencies for </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">external</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">latest</span><span class="p">][</span><span class="s">&#39;dependencies&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">dep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="s">&#39;vendor&#39;</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">install_external</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-        <span class="n">archive</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">.tar.gz&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">latest</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;versions&#39;</span><span class="p">][</span><span class="n">version</span><span class="p">][</span><span class="s">&#39;dependencies&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">dep</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">vendor_path</span><span class="p">):</span>
+                    <span class="n">opt</span> <span class="o">=</span> <span class="n">options</span>
+                    <span class="c"># TODO: work out the right version for a dependency</span>
+                    <span class="n">opt</span><span class="o">.</span><span class="n">ext_version</span> <span class="o">=</span> <span class="s">&#39;latest&#39;</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">install_external</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">vendor_path</span><span class="p">)</span>
+        <span class="n">archive</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">.tar.gz&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
         <span class="n">fetch_archive</span><span class="p">(</span><span class="n">url</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">archive</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Installed </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
 
@@ -823,35 +856,28 @@
 <span class="sd">        Vendors behave differently to other generators</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Fetching externals, may take a while&quot;</span><span class="p">)</span>
-        <span class="c"># bit of a hack...</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
         <span class="k">for</span> <span class="n">external</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_path</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">root</span><span class="p">,</span>
-                                    <span class="n">options</span><span class="o">.</span><span class="n">design</span><span class="p">,</span>
-                                    <span class="s">&#39;vendor/</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">external</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;Installing </span><span class="si">%s</span><span class="s"> into </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
-            <span class="c"># TODO: catch not founds etc</span>
-            <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://kan.so/repository/</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">external</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;fetching from </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">url</span><span class="p">)</span>
-            <span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-            <span class="n">package</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
-            <span class="k">if</span> <span class="s">&#39;tags&#39;</span> <span class="ow">in</span> <span class="n">package</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="n">archive</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">.tar.gz&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">package</span><span class="p">[</span><span class="s">&#39;tags&#39;</span><span class="p">][</span><span class="s">&#39;latest&#39;</span><span class="p">])</span>
-                <span class="n">fetch_archive</span><span class="p">(</span><span class="n">url</span> <span class="o">+</span> <span class="s">&#39;/&#39;</span> <span class="o">+</span> <span class="n">archive</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Installed </span><span class="si">%s</span><span class="s"> to </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="s">&#39;Could not retrieve package info for </span><span class="si">%s</span><span class="s"> from </span><span class="si">%s</span><span class="s">&#39;</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span>
-
+            <span class="bp">self</span><span class="o">.</span><span class="n">install_external</span><span class="p">(</span><span class="n">external</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
 </div></div>
+<div class="viewcode-block" id="cli_doc"><a class="viewcode-back" href="../cli.html#situp.cli_doc">[docs]</a><span class="k">def</span> <span class="nf">cli_doc</span><span class="p">():</span>
+    <span class="k">pass</span>
+</div>
 <span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
 
     <span class="n">cli</span> <span class="o">=</span> <span class="n">CommandDispatch</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="p">[</span><span class="n">AddServer</span><span class="p">,</span> <span class="n">Push</span><span class="p">,</span> <span class="n">Fetch</span><span class="p">,</span> <span class="n">InstallVendor</span><span class="p">,</span> <span class="n">View</span><span class="p">,</span> <span class="n">ListGen</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span>
-            <span class="n">Document</span><span class="p">,</span> <span class="n">Html</span><span class="p">,</span> <span class="n">GitHook</span><span class="p">,</span> <span class="n">Filter</span><span class="p">]:</span>
-        <span class="n">cli</span><span class="o">.</span><span class="n">register_command</span><span class="p">(</span><span class="n">command</span><span class="p">())</span>
 
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">command</span> <span class="ow">in</span> <span class="p">[</span><span class="n">AddServer</span><span class="p">,</span> <span class="n">Push</span><span class="p">,</span> <span class="n">Fetch</span><span class="p">,</span> <span class="n">InstallVendor</span><span class="p">,</span> <span class="n">View</span><span class="p">,</span> <span class="n">ListGen</span><span class="p">,</span> <span class="n">Show</span><span class="p">,</span>
+            <span class="n">Document</span><span class="p">,</span> <span class="n">Html</span><span class="p">,</span> <span class="n">GitHook</span><span class="p">,</span> <span class="n">Filter</span><span class="p">,</span> <span class="n">Update</span><span class="p">,</span> <span class="n">Validation</span><span class="p">]:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">command</span> <span class="p">()</span>
+        <span class="n">cli</span><span class="o">.</span><span class="n">register_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s"> : &#39;</span> <span class="o">%</span> <span class="n">cmd</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+
+    <span class="n">cli_doc</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+    <span class="k">print</span> <span class="n">cli_doc</span><span class="o">.</span><span class="n">__doc__</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">cli</span><span class="o">.</span><span class="n">commands</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="n">cli</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>

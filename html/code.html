@@ -23,7 +23,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="situp v0.1.2 documentation" href="index.html" />
-    <link rel="prev" title="Using situp.py" href="usage.html" /> 
+    <link rel="prev" title="Command line interface" href="cli.html" /> 
   </head>
   <body>
     <div class="related">
@@ -36,7 +36,7 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="usage.html" title="Using situp.py"
+          <a href="cli.html" title="Command line interface"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">situp v0.1.2 documentation</a> &raquo;</li> 
       </ul>
@@ -73,6 +73,11 @@ of the application root.</p>
 <dt id="situp.Fetch">
 <em class="property">class </em><tt class="descclassname">situp.</tt><tt class="descname">Fetch</tt><a class="reference internal" href="_modules/situp.html#Fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.Fetch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copy a remote CouchApp into the working directory.</p>
+<dl class="method">
+<dt id="situp.Fetch.run_command">
+<tt class="descname">run_command</tt><big>(</big><em>args</em>, <em>options</em><big>)</big><a class="headerlink" href="#situp.Fetch.run_command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="class">
@@ -83,7 +88,7 @@ The code is held in kanso packages, and situp assumes that these have been
 correctly built.</p>
 <dl class="method">
 <dt id="situp.FetchVendors.install_external">
-<tt class="descname">install_external</tt><big>(</big><em>external</em>, <em>options</em><big>)</big><a class="reference internal" href="_modules/situp.html#FetchVendors.install_external"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.FetchVendors.install_external" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">install_external</tt><big>(</big><em>external</em>, <em>options</em>, <em>vendor_path=None</em><big>)</big><a class="reference internal" href="_modules/situp.html#FetchVendors.install_external"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.FetchVendors.install_external" title="Permalink to this definition">¶</a></dt>
 <dd><p>Install external</p>
 </dd></dl>
 
@@ -206,7 +211,8 @@ reducers (faster) for the reduce.js (see options above).</p>
 <dl class="function">
 <dt id="situp.fetch_archive">
 <tt class="descclassname">situp.</tt><tt class="descname">fetch_archive</tt><big>(</big><em>url</em>, <em>path</em>, <em>filter_list=</em><span class="optional">[</span><span class="optional">]</span><big>)</big><a class="reference internal" href="_modules/situp.html#fetch_archive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#situp.fetch_archive" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fetch a remote tar/zip archive and extract it, applying a filter if one is provided.</p>
+<dd><p>Fetch a remote tar/zip archive and extract it, applying a filter if one is
+provided.</p>
 </dd></dl>
 
 </div>
@@ -218,8 +224,8 @@ reducers (faster) for the reduce.js (see options above).</p>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="usage.html"
-                        title="previous chapter">Using situp.py</a></p>
+  <p class="topless"><a href="cli.html"
+                        title="previous chapter">Command line interface</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/code.txt"
@@ -252,7 +258,7 @@ reducers (faster) for the reduce.js (see options above).</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="usage.html" title="Using situp.py"
+          <a href="cli.html" title="Command line interface"
              >previous</a> |</li>
         <li><a href="index.html">situp v0.1.2 documentation</a> &raquo;</li> 
       </ul>

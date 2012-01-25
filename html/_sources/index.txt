@@ -15,6 +15,7 @@ Documentation
    :maxdepth: 2
 
    usage
+   cli
    code
 
 .. include:: externals.rst

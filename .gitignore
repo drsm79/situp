@@ -1,1 +1,8 @@
+*.pyc
+.*
+Icon
+*conflicted copy*
+_design
+_docs
+servers.json
 web-docs
