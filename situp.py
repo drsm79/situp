@@ -288,7 +288,8 @@ class Push(Command):
                         docid = doc['_id']
                         # HEAD the doc
                         url = "/%s/%s" % (db, docid)
-                        head = request(srv['url'], 'HEAD', url, srv.get('auth', False))
+                        auth = srv.get('auth', False)
+                        head = request(srv['url'], 'HEAD', url, auth)
                         # get its _rev, append _rev to the doc dict
                         if head.getheader('etag', False):
                             etag = head.getheader('etag', False)
@@ -339,7 +340,6 @@ class Push(Command):
                 'content_type': mime
                 }}
 
-
     def _walk_design(self, name, design, options):
         """
         Walk through the design document, building a dictionary as it goes.
@@ -380,7 +380,8 @@ class Push(Command):
                         tmp_path = list(path)  # avoid overwriting original var
                         tmp_path.remove('_attachments')
                         tmp_path.append(afile)
-                        attach = self._attach(afile_path, tmp_path, options.minify)
+                        min = options.minify
+                        attach = self._attach(afile_path, tmp_path, min)
                         attachments.update(attach)
                     else:
                         if len(path) > 0 and path[0] in ['views', 'lists',
@@ -482,7 +483,7 @@ class Push(Command):
 
             if os.path.exists(docs):
                 docs_to_push = defaultdict(dict)
-                l_dir =  os.listdir(docs)
+                l_dir = os.listdir(docs)
                 for file in filter(self._allowed_file, l_dir):
                     file_path = os.path.join(docs, file)
 
@@ -494,7 +495,8 @@ class Push(Command):
                             f.close()
                         except:
                             self.logger.info('could not read %s' % file)
-                    elif os.path.isdir(file_path) and '%s.json' % file in l_dir:
+                    elif os.path.isdir(file_path) and \
+                                              '%s.json' % file in l_dir:
                     # Assume directory contents are attachments
                         attachments = os.listdir(file_path)
                         key = '%s.json' % file
@@ -502,7 +504,7 @@ class Push(Command):
                         for a in filter(self._allowed_file, attachments):
                             att.update(self._attach(a, file_path,
                                 options.minify))
-                        docs_to_push[key].update({'_attachments':att})
+                        docs_to_push[key].update({'_attachments': att})
                 self._push_docs(docs_to_push.values(), options.database,
                         servers_to_use)
         else:
