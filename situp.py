@@ -525,25 +525,36 @@ class Fetch(Command):
         url = args[0]
         d = json.load(urllib.urlopen('%s/_all_docs?include_docs=true' % url))
         app = [d['doc'] for d in d['rows']]
-        print app
+
         if not os.path.exists('_docs'):
             os.mkdir('_docs')
+        if not os.path.exists('_design'):
+            os.mkdir('_design')
         for doc in app:
-            # TODO: have this be optional
+            # TODO: have _rev removal be optional
             # TODO: optionally filter out data or design docs
+            # TODO: correct on disk layout of vendors
             del doc['_rev']
             id = str(doc['_id'])
             attachments = doc.get('_attachments', {})
-            del doc['_attachments']
-            f = open(os.path.join('_docs', '%s.json' % id), 'w')
-            json.dump(doc, f)
-            f.close()
-            att_dir = os.path.join('_docs', id)
-            if len(attachments) and not os.path.exists(att_dir):
-                os.mkdir(att_dir)
+            if attachments:
+                del doc['_attachments']
+            if id.startswith('_design'):
+                path_elems = id.split('/')
+                path_elems.append('_attachments')
+                base_att_dir = os.path.join(*path_elems)
+
+            else:
+                f = open(os.path.join('_docs', '%s.json' % id), 'w')
+                json.dump(doc, f)
+                f.close()
+                base_att_dir = os.path.join('_docs', id)
             for att in attachments.keys():
-                print att
-                a_file = os.path.join(att_dir, att)
+                att_dir = os.path.join(base_att_dir, *att.split('/')[:-1])
+                if not os.path.exists(att_dir):
+                    os.makedirs(att_dir)
+
+                a_file = str(os.path.join(att_dir, att.split('/')[-1]))
                 urllib.urlretrieve('%s/%s/%s' % (url, id, att), a_file)
 
 
