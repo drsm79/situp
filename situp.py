@@ -230,7 +230,8 @@ class Push(Command):
     """
     name = 'push'
     no_required_args = 0
-    #TODO: pick this up from config
+    # TODO: pick this up from config
+    # TODO: add a --no-push-docs option
     ignored_files = ['.DS_Store', '.cvs', '.svn', '.hg', '.git', '*.swp']
 
     def _add_options(self):
@@ -527,9 +528,11 @@ class Fetch(Command):
         d = json.load(urllib.urlopen('%s/_all_docs?include_docs=true' % url))
         app = [d['doc'] for d in d['rows']]
         print app
-        if not os.path.exists('_docs'): os.mkdir('_docs')
+        if not os.path.exists('_docs'):
+            os.mkdir('_docs')
         for doc in app:
             # TODO: have this be optional
+            # TODO: optionally filter out data or design docs
             del doc['_rev']
             id = str(doc['_id'])
             attachments = doc.get('_attachments', {})
@@ -544,7 +547,6 @@ class Fetch(Command):
                 print att
                 a_file = os.path.join(att_dir, att)
                 urllib.urlretrieve('%s/%s/%s' % (url, id, att), a_file)
-
 
 
 class InstallVendor(Command):
