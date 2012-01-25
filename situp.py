@@ -316,23 +316,23 @@ class Push(Command):
         """
         return True not in [fnmatch(filepath, r) for r in self.ignored_files]
 
-    def _attach(self, afile, path, minify=False):
+    def _attach(self, afile, file_path, minify=False):
         """
-        Takes a path to a file, works out it's mime type (assumes text/plain if
-        it can't be determined) and returns the necessary dict to upload to a
-        doc.
+        Takes a path to a file, and the name of the attachment, works out it's
+        mime type (assumes text/plain if it can't be determined) and returns
+        the necessary dict to upload to a doc.
         """
-        mime = guess_mime_type(afile)[0]
+        mime = guess_mime_type(file_path)[0]
 
         if not mime:
             msg = 'Assuming text/plain mime type for %s'
-            self.logger.warning(msg % afile)
+            self.logger.warning(msg % file_path)
             mime = 'text/plain'
 
         if minify and mime == "application/javascript":
-            data = self._minify(path, afile)
+            data = self._minify(file_path)
         else:
-            f = open(os.path.join(path, afile))
+            f = open(os.path.join(file_path))
             data = base64.encodestring(f.read())
             f.close()
 
@@ -365,24 +365,22 @@ class Push(Command):
         app = {'_id': name}
         for root, dirs, files in os.walk(design):
             path = root.split(name)[1].split('/')[1:]
-            for walkeddir in filter(self._allowed_file, dirs):
-                # remove a directory if it's not allowed
-                self.logger.debug('ignoring %s' % os.path.join(root,
-                    walkeddir))
-                dirs.remove(walkeddir)
+            dirs = filter(self._allowed_file, dirs)
             if files:
                 d = {}
-                for afile in files:
+                for afile in filter(self._allowed_file, files):
                     afile_path = os.path.join(root, afile)
-                    if not self._allowed_file(afile):
-                        self.logger.debug('ignoring %s' % afile)
-                        continue
                     if '_attachments' in path:
-                        tmp_path = list(path)  # avoid overwriting original var
+                        min = options.minify
+
+                        tmp_root = os.path.join(root, afile)
+
+                        tmp_path = list(path)
                         tmp_path.remove('_attachments')
                         tmp_path.append(afile)
-                        min = options.minify
-                        attach = self._attach(afile_path, tmp_path, min)
+                        tmp_path = os.path.join(*tmp_path)
+
+                        attach = self._attach(tmp_path, tmp_root, min)
                         attachments.update(attach)
                     else:
                         if len(path) > 0 and path[0] in ['views', 'lists',
@@ -401,17 +399,17 @@ class Push(Command):
             app['_attachments'] = attachments
         return app
 
-    def _minify(self):
+    def _minify(self, file):
         data = None
         try:
-            f = open(os.path.join())
+            f = open(file)
             mini = jsmin(f.read())
             data = base64.encodestring(mini)
             f.close()
         except:
             msg = "Could not minify %s, uploading expanded version"
-            self.logger.debug(msg % afile)
-            data = base64.encodestring(open(os.path.join(root, afile)).read())
+            self.logger.debug(msg % file)
+            data = base64.encodestring(open(file).read())
         return data
 
     def _process_url(self, url):
@@ -503,8 +501,8 @@ class Push(Command):
                         key = '%s.json' % file
                         att = {}
                         for a in filter(self._allowed_file, attachments):
-                            att.update(self._attach(a, file_path,
-                                options.minify))
+                            fp = os.path.join(file_path, a)
+                            att.update(self._attach(a, fp, options.minify))
                         docs_to_push[key].update({'_attachments': att})
                 self._push_docs(docs_to_push.values(), options.database,
                         servers_to_use)
