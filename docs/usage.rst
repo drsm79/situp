@@ -47,10 +47,16 @@ Vendors can be imported into the application via::
 So, for example::
 
 	situp.py vendor backbone
+	situp.py vendor backbone -d tst-app
 
 Will download and install the vendor backbone and its dependencies into the
-tst-app design. ``situp.py`` uses the kanso packages, so anything that is
-available on http://kan.so/packages/ should work with situp.
+either the $PWD or into the tst-app design ($PWD/_design/tst-app). ``situp.py`` 
+uses the kanso packages, so anything that is available on http://kan.so/packages/ 
+should work with situp.
+
+If you want a specific version of a package you can install it with the 
+``--ext_version`` flag. Currently you'll get the latest version of any dependencies, 
+so you may need to explicitly import a certain version of a dependency, too.
 
 Defining servers
 ----------------------------------------
