@@ -199,7 +199,7 @@ class AddServer(Command):
                 dest="name",
                 help="The simple name server to add [required]")
 
-    def process_args(self, args=None, options=None):
+    def _process_args(self, args=None, options=None):
         options, args = Command.process_args(self, args, options)
         msg = 'Username for server, press enter for no user/password auth:'
         username = raw_input(msg)
@@ -371,7 +371,10 @@ class Push(Command):
                 for afile in filter(self._allowed_file, files):
                     afile_path = os.path.join(root, afile)
                     if '_attachments' in path:
-                        min = options.minify
+                        if CAN_MINIFY_JS:
+                            min = options.minify
+                        else:
+                            min = False
 
                         tmp_root = os.path.join(root, afile)
 
