@@ -200,7 +200,7 @@ class AddServer(Command):
                 help="The simple name server to add [required]")
 
     def _process_args(self, args=None, options=None):
-        options, args = Command.process_args(self, args, options)
+        options, args = Command._process_args(self)
         msg = 'Username for server, press enter for no user/password auth:'
         username = raw_input(msg)
         if username:

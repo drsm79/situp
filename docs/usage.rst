@@ -2,60 +2,66 @@ Using situp.py
 ========================================
 Help
 ----------------------------------------
-All commands in situp.py have a help function. Invoke it by running: ::
+All commands in ``situp.py`` have a help function. Invoke it by running: ::
 
-    setup.py <command> -h
-
-
-Multiple design doc support
-----------------------------------------
-situp.py supports couchapps that use multiple design documents. If you just
-want the current directory to be your application just run situp.py as: ::
-
-	situp.py view foo
-
-If you would like to create a view in a specific design doc, run the command
-as: ::
-
-	situp.py view foo -d tst-app
+    situp.py <command> -h
 
 Creating views, lists, shows and filters
 ----------------------------------------
-situp.py will create a view called foo in tst-app ($PWD/_design/tst-app) with
-empty functions in the map.js and reduce.js files.::
+``situp.py`` will create a view called foo in $PWD with empty functions in the
+``map.js`` and ``reduce.js`` files::
 
 	situp.py view foo
 
 Will create a view called bar in tst-app ($PWD/_design/tst-app) with an empty
-function in map.js and a _sum built in reduce.::
+function in ``map.js`` and a _sum built in reduce::
 
 	situp.py view bar --sum
 
-Will create the view baz in the views directory of the current working dir
-(e.g. $PWD/views/baz)::
-
-	situp.py view baz
-
-The same syntax will create lists, shows and filters: ::
+The same syntax will create lists, shows, filters, validators and update functions::
 
 	situp.py list mylist
 	situp.py show myshow
 	situp.py filter myfilter
+	situp.py validation myvalidator
+	situp.py update myupdate
+
+Multiple design doc support
+----------------------------------------
+``situp.py`` supports couchapps that use multiple design documents. If you just
+want the current directory to be your application just run ``situp.py`` as::
+
+	situp.py view foo
+
+If you would like to create a view in a specific design doc, run the command
+as::
+
+	situp.py view foo -d tst-app
 
 Importing a vendor
 ----------------------------------------
-Vendors can be imported into the application via: ::
+Vendors can be imported into the application via::
 
 	situp.py vendor <vendor-name>
 
+So, for example::
+
+	situp.py vendor backbone
+	situp.py vendor backbone -d tst-app
+
 Will download and install the vendor backbone and its dependencies into the
-tst-app design. situp.py uses the kanso packages, so anything that is available
-on http://kan.so/packages/ should work with situp.
+either the $PWD or into the tst-app design ($PWD/_design/tst-app). ``situp.py`` 
+uses the kanso packages, so anything that is available on http://kan.so/packages/ 
+should work with situp.
+
+If you want a specific version of a package you can install it with the 
+``--ext_version`` flag. Currently you'll get the latest version of any dependencies, 
+so you may need to explicitly import a certain version of a dependency, too.
 
 Defining servers
 ----------------------------------------
 ``situp.py`` lets you define servers so you can interact with them by name
-instead of URL: ::
+instead of URL::
 
 	situp.py addserver -n dev -s http://localhost:5984
 
@@ -65,14 +71,14 @@ file public since people will be able to access your couch instances.
 
 Pushing to a (set of) servers
 ----------------------------------------
-Pushing an application to a server is as simple as running: ::
+Pushing an application to a server is as simple as running::
 
 	situp.py push -s http://localhost:5984 -d databasename
 
 The -s option can be specified multiple times.
 
 If a server has been defined (see above) you can refer to it via it's short
-name: ::
+name::
 
 	situp.py push -s dev -d databasename
 
@@ -117,6 +123,6 @@ Git hook
 ----------------------------------------
 
 You can install a git post commit hook to push to your server at the same time
-as committing to your git repository by running: ::
+as committing to your git repository by running::
 
     situp.py githook
