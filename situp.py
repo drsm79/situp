@@ -537,6 +537,7 @@ class Fetch(Command):
             # TODO: have _rev removal be optional
             # TODO: optionally filter out data or design docs
             # TODO: correct on disk layout of vendors
+            # FIXME: ignores design docs without _attachments
             del doc['_rev']
             id = str(doc['_id'])
             attachments = doc.get('_attachments', {})
@@ -546,6 +547,20 @@ class Fetch(Command):
                 path_elems = id.split('/')
                 path_elems.append('_attachments')
                 base_att_dir = os.path.join(*path_elems)
+                # This could (and should) be loads nicer
+                views = os.path.join(id, 'views')
+                if not os.path.exists(id):
+                    os.mkdir(id)
+                if 'views' in doc.keys() and not os.path.exists(views):
+                    os.mkdir(os.path.join(id, 'views'))
+                for view,content in doc['views'].items():
+                    p = os.path.join(views, view)
+                    if not os.path.exists(p):
+                        os.mkdir(p)
+                    for fn, fnc in content.items():
+                        f = open(os.path.join(p, '%s.js' % fn), 'w')
+                        f.write(fnc)
+                        f.close()
 
             else:
                 f = open(os.path.join('_docs', '%s.json' % id), 'w')
