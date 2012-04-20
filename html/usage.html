@@ -55,15 +55,38 @@
 <h1>Using situp.py<a class="headerlink" href="#using-situp-py" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="help">
 <h2>Help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h2>
-<p>All commands in situp.py have a help function. Invoke it by running:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">h</span>
+<p>All commands in <tt class="docutils literal"><span class="pre">situp.py</span></tt> have a help function. Invoke it by running:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">situp</span><span class="o">.</span><span class="n">py</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">h</span>
 </pre></div>
+</div>
+</div>
+<div class="section" id="creating-views-lists-shows-and-filters">
+<h2>Creating views, lists, shows and filters<a class="headerlink" href="#creating-views-lists-shows-and-filters" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">situp.py</span></tt> will create a view called foo in $PWD with empty functions in the
+<tt class="docutils literal"><span class="pre">map.js</span></tt> and <tt class="docutils literal"><span class="pre">reduce.js</span></tt> files:</p>
+<div class="highlight-python"><pre>situp.py view foo</pre>
+</div>
+<p>Will create a view called bar in tst-app ($PWD/_design/tst-app) with an empty
+function in <tt class="docutils literal"><span class="pre">map.js</span></tt> and a _sum built in reduce:</p>
+<div class="highlight-python"><pre>situp.py view bar --sum</pre>
+</div>
+<p>If you host your application on <a class="reference external" href="http://www.cloudant.com">Cloudant</a> you can use
+their chained map reduce by adding a file called <tt class="docutils literal"><span class="pre">dbcopy</span></tt>, containing the name
+of the database that will store the chained view results, to the view directory,
+e.g. the view created above will result in <tt class="docutils literal"><span class="pre">views/bar/map.js</span></tt> and
+<tt class="docutils literal"><span class="pre">views/bar/reduce.js</span></tt>, you need to write <tt class="docutils literal"><span class="pre">views/bar/dbcopy</span></tt>.</p>
+<p>The same syntax will create lists, shows, filters, validators and update functions:</p>
+<div class="highlight-python"><pre>situp.py list mylist
+situp.py show myshow
+situp.py filter myfilter
+situp.py validation myvalidator
+situp.py update myupdate</pre>
 </div>
 </div>
 <div class="section" id="multiple-design-doc-support">
 <h2>Multiple design doc support<a class="headerlink" href="#multiple-design-doc-support" title="Permalink to this headline">¶</a></h2>
-<p>situp.py supports couchapps that use multiple design documents. If you just
-want the current directory to be your application just run situp.py as:</p>
+<p><tt class="docutils literal"><span class="pre">situp.py</span></tt> supports couchapps that use multiple design documents. If you just
+want the current directory to be your application just run <tt class="docutils literal"><span class="pre">situp.py</span></tt> as:</p>
 <div class="highlight-python"><pre>situp.py view foo</pre>
 </div>
 <p>If you would like to create a view in a specific design doc, run the command
@@ -71,34 +94,22 @@ as:</p>
 <div class="highlight-python"><pre>situp.py view foo -d tst-app</pre>
 </div>
 </div>
-<div class="section" id="creating-views-lists-shows-and-filters">
-<h2>Creating views, lists, shows and filters<a class="headerlink" href="#creating-views-lists-shows-and-filters" title="Permalink to this headline">¶</a></h2>
-<p>situp.py will create a view called foo in tst-app ($PWD/_design/tst-app) with
-empty functions in the map.js and reduce.js files.:</p>
-<div class="highlight-python"><pre>situp.py view foo</pre>
-</div>
-<p>Will create a view called bar in tst-app ($PWD/_design/tst-app) with an empty
-function in map.js and a _sum built in reduce.:</p>
-<div class="highlight-python"><pre>situp.py view bar --sum</pre>
-</div>
-<p>Will create the view baz in the views directory of the current working dir
-(e.g. $PWD/views/baz):</p>
-<div class="highlight-python"><pre>situp.py view baz</pre>
-</div>
-<p>The same syntax will create lists, shows and filters:</p>
-<div class="highlight-python"><pre>situp.py list mylist
-situp.py show myshow
-situp.py filter myfilter</pre>
-</div>
-</div>
 <div class="section" id="importing-a-vendor">
 <h2>Importing a vendor<a class="headerlink" href="#importing-a-vendor" title="Permalink to this headline">¶</a></h2>
 <p>Vendors can be imported into the application via:</p>
 <div class="highlight-python"><pre>situp.py vendor &lt;vendor-name&gt;</pre>
 </div>
+<p>So, for example:</p>
+<div class="highlight-python"><pre>situp.py vendor backbone
+situp.py vendor backbone -d tst-app</pre>
+</div>
 <p>Will download and install the vendor backbone and its dependencies into the
-tst-app design. situp.py uses the kanso packages, so anything that is available
-on <a class="reference external" href="http://kan.so/packages/">http://kan.so/packages/</a> should work with situp.</p>
+either the $PWD or into the tst-app design ($PWD/_design/tst-app). <tt class="docutils literal"><span class="pre">situp.py</span></tt>
+uses the kanso packages, so anything that is available on <a class="reference external" href="http://kan.so/packages/">http://kan.so/packages/</a>
+should work with situp.</p>
+<p>If you want a specific version of a package you can install it with the
+<tt class="docutils literal"><span class="pre">--ext_version</span></tt> flag. Currently you&#8217;ll get the latest version of any dependencies,
+so you may need to explicitly import a certain version of a dependency, too.</p>
 </div>
 <div class="section" id="defining-servers">
 <h2>Defining servers<a class="headerlink" href="#defining-servers" title="Permalink to this headline">¶</a></h2>
@@ -172,8 +183,8 @@ as committing to your git repository by running:</p>
   <ul>
 <li><a class="reference internal" href="#">Using situp.py</a><ul>
 <li><a class="reference internal" href="#help">Help</a></li>
-<li><a class="reference internal" href="#multiple-design-doc-support">Multiple design doc support</a></li>
 <li><a class="reference internal" href="#creating-views-lists-shows-and-filters">Creating views, lists, shows and filters</a></li>
+<li><a class="reference internal" href="#multiple-design-doc-support">Multiple design doc support</a></li>
 <li><a class="reference internal" href="#importing-a-vendor">Importing a vendor</a></li>
 <li><a class="reference internal" href="#defining-servers">Defining servers</a></li>
 <li><a class="reference internal" href="#pushing-to-a-set-of-servers">Pushing to a (set of) servers</a></li>
@@ -186,7 +197,7 @@ as committing to your git repository by running:</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter"><tt class="docutils literal docutils literal docutils literal docutils literal"><span class="pre">situp.py</span></tt></a></p>
+                        title="previous chapter"><tt class="docutils literal docutils literal"><span class="pre">situp.py</span></tt></a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="cli.html"
                         title="next chapter">Command line interface</a></p>
