@@ -18,6 +18,12 @@ function in ``map.js`` and a _sum built in reduce::
 
 	situp.py view bar --sum
 
+If you host your application on `Cloudant <http://www.cloudant.com>`_ you can use
+their chained map reduce by adding a file called ``dbcopy``, containing the name
+of the database that will store the chained view results, to the view directory,
+e.g. the view created above will result in ``views/bar/map.js`` and
+``views/bar/reduce.js``, you need to write ``views/bar/dbcopy``.
+
 The same syntax will create lists, shows, filters, validators and update functions::
 
 	situp.py list mylist
@@ -50,12 +56,12 @@ So, for example::
 	situp.py vendor backbone -d tst-app
 
 Will download and install the vendor backbone and its dependencies into the
-either the $PWD or into the tst-app design ($PWD/_design/tst-app). ``situp.py`` 
-uses the kanso packages, so anything that is available on http://kan.so/packages/ 
+either the $PWD or into the tst-app design ($PWD/_design/tst-app). ``situp.py``
+uses the kanso packages, so anything that is available on http://kan.so/packages/
 should work with situp.
 
-If you want a specific version of a package you can install it with the 
-``--ext_version`` flag. Currently you'll get the latest version of any dependencies, 
+If you want a specific version of a package you can install it with the
+``--ext_version`` flag. Currently you'll get the latest version of any dependencies,
 so you may need to explicitly import a certain version of a dependency, too.
 
 Defining servers
