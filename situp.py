@@ -354,11 +354,14 @@ class Push(Command):
                 return {path_elem: path_dict}
 
         def recurse_update(a_dict, b_dict):
-            for k, v in b_dict.items():
-                if k not in a_dict.keys() or type(v) != type(a_dict[k]):
-                    a_dict[k] = v
-                else:
-                    a_dict[k] = recurse_update(a_dict[k], v)
+            try:
+                for k, v in b_dict.items():
+                    if k not in a_dict.keys() or type(v) != type(a_dict[k]):
+                        a_dict[k] = v
+                    else:
+                        a_dict[k] = recurse_update(a_dict[k], v)
+            except:
+                print 'skipping %s' % b_dict
             return a_dict
 
         attachments = {}
@@ -389,11 +392,11 @@ class Push(Command):
                         if len(path) > 0 and path[0] in ['views', 'lists',
                                 'shows', 'filters']:
                             f = open(afile_path)
-                            d[afile.strip('.js')] = f.read()
+                            d[afile.strip('.js')] = f.read().strip()
                             f.close()
                         else:
                             f = open(afile_path)
-                            d[afile] = f.read()
+                            d[afile] = f.read().strip()
                             f.close()
                 if d.keys():
                     app = recurse_update(app, reduce(nest, reversed(path), d))
