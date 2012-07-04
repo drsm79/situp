@@ -29,7 +29,10 @@ try:
 except:
     pass
 
-__version__ = "0.1.2"
+import preproc
+import postproc
+
+__version__ = "0.2.1"
 
 
 class CommandDispatch:
@@ -250,12 +253,52 @@ class Push(Command):
         group.add_option('-e', '--database', dest='database',
                 help="Push the app to named database")
 
+        proc_l = lambda x: not x.startswith('_')
+        pre_help = "Run named preprocessors, available preprocessors"
+        pre_help += " %s " % ', '.join(filter(proc_l, dir(preproc)))
+        pre_help += "(multiple allowed)"
+
+        group.add_option("--pre",
+                dest="preproc", default=[], action='append',
+                help=pre_help)
+
+        post_help = "Run named postprocessors, available postprocessors"
+        post_help +=" %s " % ', '.join(filter(proc_l, dir(postproc)))
+        post_help += "(multiple allowed)"
+
+        group.add_option("--post",
+                dest="postproc", default=[], action='append',
+                help=post_help)
+
         if CAN_MINIFY_JS:
             group.add_option("-m", "--minify",
                 dest="minify", default=False, action="store_true",
                 help="Minify javascript before pushing to database")
 
         self.parser.add_option_group(group)
+
+    def __call__(self):
+        """
+        Set up the logger, work out if I should print help or call the command.
+        """
+        (options, args) = self._process_args()
+
+        self._configure_logger(options)
+
+        self.logger.debug('called')
+        self.logger.debug(args)
+        self.logger.debug(options)
+
+        for pre in options.preproc:
+            self.logger.debug('running %s' % pre)
+            getattr(preproc, pre)(args, options, self.logger)
+
+        self.run_command(args, options)
+
+        for post in options.postproc:
+            self.logger.debug('running %s' % post)
+            getattr(postproc, post)(args, options, self.logger)
+
 
     def _push_docs(self, docs_list, db, servers):
         """
