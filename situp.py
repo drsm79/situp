@@ -390,7 +390,7 @@ class Push(Command):
                         attachments.update(attach)
                     else:
                         if len(path) > 0 and path[0] in ['views', 'lists',
-                                'shows', 'filters']:
+                                'shows', 'filters', 'indexes']:
                             f = open(afile_path)
                             d[afile.strip('.js')] = f.read().strip()
                             f.close()
@@ -524,21 +524,27 @@ class Fetch(Command):
 
     def _add_options(self):
         group = OptionGroup(self.parser, "Fetch options", "")
-
+        group.add_option("-g", "--getdocs",
+                dest="getdocs", action="store_true", default=False,
+                help="Fetch documents as well as the design docs - potentially large response")
+        self.parser.add_option_group(group)
     def run_command(self, args, options):
         """
         """
-        url = args[0]
-        d = json.load(urllib.urlopen('%s/_all_docs?include_docs=true' % url))
+        url = '%s/_all_docs?include_docs=true' % args[0]
+        if not options.getdocs:
+            url = '%s&startkey="_design%%2F"&endkey="_design0"' % url
+        d = json.load(urllib.urlopen(url))
         app = [d['doc'] for d in d['rows']]
 
-        if not os.path.exists('_docs'):
-            os.mkdir('_docs')
-        if not os.path.exists('_design'):
-            os.mkdir('_design')
+        if not os.path.exists(options.root):
+            os.mkdir(options.root)
+        if options.getdocs and not os.path.exists('%s/_docs' % options.root):
+            os.mkdir('%s/_docs' % options.root)
+        if not os.path.exists('%s/_design' % options.root):
+            os.mkdir('%s/_design' % options.root)
         for doc in app:
             # TODO: have _rev removal be optional
-            # TODO: optionally filter out data or design docs
             # TODO: correct on disk layout of vendors
             # FIXME: ignores design docs without _attachments
             del doc['_rev']
@@ -547,16 +553,16 @@ class Fetch(Command):
             if attachments:
                 del doc['_attachments']
             if id.startswith('_design'):
-                path_elems = id.split('/')
+                path_elems = os.path.join(options.root, id).split('/')
                 path_elems.append('_attachments')
                 base_att_dir = os.path.join(*path_elems)
                 # This could (and should) be loads nicer
-                views = os.path.join(id, 'views')
-                if not os.path.exists(id):
-                    os.mkdir(id)
+                views = os.path.join(options.root, id, 'views')
+                if not os.path.exists(os.path.join(options.root, id)):
+                    os.mkdir(os.path.join(options.root, id))
                 if 'views' in doc.keys() and not os.path.exists(views):
-                    os.mkdir(os.path.join(id, 'views'))
-                for view,content in doc['views'].items():
+                    os.mkdir(views)
+                for view, content in doc['views'].items():
                     p = os.path.join(views, view)
                     if not os.path.exists(p):
                         os.mkdir(p)
@@ -566,10 +572,10 @@ class Fetch(Command):
                         f.close()
 
             else:
-                f = open(os.path.join('_docs', '%s.json' % id), 'w')
+                f = open(os.path.join('%s/_docs' % options.root, '%s.json' % id), 'w')
                 json.dump(doc, f)
                 f.close()
-                base_att_dir = os.path.join('_docs', id)
+                base_att_dir = os.path.join('%s/_docs' % options.root, id)
             for att in attachments.keys():
                 att_dir = os.path.join(base_att_dir, *att.split('/')[:-1])
                 if not os.path.exists(att_dir):
