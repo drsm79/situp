@@ -29,8 +29,19 @@ try:
 except:
     pass
 
-import preproc
-import postproc
+CAN_PREPROC = False
+try:
+    import preproc
+    CAN_PREPROC = True
+except:
+    pass
+
+CAN_POSTPROC = False
+try:
+    import postproc
+    CAN_POSTPROC = True
+except:
+    pass
 
 __version__ = "0.2.1"
 
@@ -253,22 +264,24 @@ class Push(Command):
         group.add_option('-e', '--database', dest='database',
                 help="Push the app to named database")
 
-        proc_l = lambda x: not x.startswith('_')
-        pre_help = "Run named preprocessors, available preprocessors"
-        pre_help += " %s " % ', '.join(filter(proc_l, dir(preproc)))
-        pre_help += "(multiple allowed)"
+        if CAN_PREPROC:
+            proc_l = lambda x: not x.startswith('_')
+            pre_help = "Run named preprocessors, available preprocessors"
+            pre_help += " %s " % ', '.join(filter(proc_l, dir(preproc)))
+            pre_help += "(multiple allowed)"
 
-        group.add_option("--pre",
-                dest="preproc", default=[], action='append',
-                help=pre_help)
+            group.add_option("--pre",
+                    dest="preproc", default=[], action='append',
+                    help=pre_help)
 
-        post_help = "Run named postprocessors, available postprocessors"
-        post_help +=" %s " % ', '.join(filter(proc_l, dir(postproc)))
-        post_help += "(multiple allowed)"
+        if CAN_POSTPROC:
+            post_help = "Run named postprocessors, available postprocessors"
+            post_help +=" %s " % ', '.join(filter(proc_l, dir(postproc)))
+            post_help += "(multiple allowed)"
 
-        group.add_option("--post",
-                dest="postproc", default=[], action='append',
-                help=post_help)
+            group.add_option("--post",
+                    dest="postproc", default=[], action='append',
+                    help=post_help)
 
         if CAN_MINIFY_JS:
             group.add_option("-m", "--minify",
@@ -289,15 +302,17 @@ class Push(Command):
         self.logger.debug(args)
         self.logger.debug(options)
 
-        for pre in options.preproc:
-            self.logger.debug('running %s' % pre)
-            getattr(preproc, pre)(args, options, self.logger)
+        if CAN_PREPROC:
+            for pre in options.preproc:
+                self.logger.debug('running %s' % pre)
+                getattr(preproc, pre)(args, options, self.logger)
 
         self.run_command(args, options)
 
-        for post in options.postproc:
-            self.logger.debug('running %s' % post)
-            getattr(postproc, post)(args, options, self.logger)
+        if CAN_POSTPROC:
+            for post in options.postproc:
+                self.logger.debug('running %s' % post)
+                getattr(postproc, post)(args, options, self.logger)
 
 
     def _push_docs(self, docs_list, db, servers):
