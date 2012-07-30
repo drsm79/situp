@@ -101,3 +101,23 @@ def markdown(args, options, logger):
             footer = open(footer_f).read()
 
     _compile_md(markdown, designpath, logger, _md_to_html)
+
+
+def grunt(args, options, logger):
+    pass
+
+
+def bbb(args, options, logger):
+    """
+    run the bbb release task and copy the result into _attachments for the
+    named design(s). Assumes the bbb app is in the PWD
+    """
+    attachments = _os.path.join(_os.path.join(options.root, *options.design),
+                                '_attachments')
+    bld_dir = 'dist/release'
+    _external(['bbb', 'clean'], logger, '[bbb] Cleaning')
+    _external(['bbb', 'release'], logger, '[bbb] Building')
+    logger.info('[bbb] Copying release artifacts')
+    for artifact in ['%s/%s' % (bld_dir, x) for x in _os.listdir(bld_dir)]:
+        logger.debug(artifact)
+        copy2(artifact, attachments)
