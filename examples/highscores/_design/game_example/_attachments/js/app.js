@@ -14,31 +14,22 @@ $(function() {
       model: Doc,
       url: 'highscore',
       stale: "ok",
-      initialize: function(settings) {
-        // Define the success function in the init so I can have the collection
-        // in scope - very hokey...
-        var that = this;
-        this.success = function(result){
-          // Make a list of models to add into the collection
-          var models = [];
-          _.each( result.rows, function( row ) {
-            if(row){
-              models.push( that.pullData(row) );
-            }
-          });
-          if ( models.length == 0 ) { models = null }
-          return models;
-        }
-      },
-      pullData: function(row){
-        // Function to pull out data, override if you want models != rows
-        return row;
+      success: function(result){
+        // Make a list of models to add into the collection
+        var models = [];
+        _.each( result.rows, function( row ) {
+          if(row){
+            models.push( row );
+          }
+        });
+        if ( models.length === 0 ) { models = null; }
+        return models;
       },
       error : function(jqXHR, textStatus, errorThrown){
         Backbone.couch.log(["jqXHR", jqXHR]);
         Backbone.couch.log(["textStatus", textStatus]);
         Backbone.couch.log(["errorThrown", errorThrown]);
-        return null
+        return null;
       }
     });
 
@@ -46,8 +37,10 @@ $(function() {
       doreduce: true,
       group_level: 1,
       group: true,
-      pullData: function(row){
-        return {name: row.key[0]};
+      parse: function(response){
+        return _.map(response, function(row){
+          return {name: row.key[0]};
+        });
       }
     });
 
@@ -56,8 +49,10 @@ $(function() {
       doreduce: false,
       descending: true,
       limit: 10,
-      pullData: function(row){
-        return {player: row.value, score: row.key[1]};
+      parse: function(response){
+        return _.map(response, function(row){
+          return {player: row.value, score: row.key[1]};
+        });
       },
       setGame: function(game){
         // Set the game in the view parameters
@@ -82,7 +77,7 @@ $(function() {
         var dropdown = $('<select></select>');
         var that = this; // needed for the change event below
         this.collection.each(function(game){
-          dropdown.append('<option>' + game.get('name') + '</option>');;
+          dropdown.append('<option>' + game.get('name') + '</option>');
         });
         $('.games').html(dropdown);
         this.scores.setGame($('.games select :selected').text());
@@ -90,7 +85,7 @@ $(function() {
         // triggering it's render function.
         $('.games select').change(function(event){
           that.scores.setGame($('.games select :selected').text());
-        })
+        });
       }
     });
 
