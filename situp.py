@@ -303,14 +303,14 @@ class Push(Command):
         self.logger.debug(options)
 
         if CAN_PREPROC:
-            for pre in options.preproc:
+            for pre in set(options.preproc):
                 self.logger.debug('running %s' % pre)
                 getattr(preproc, pre)(args, options, self.logger)
 
         self.run_command(args, options)
 
         if CAN_POSTPROC:
-            for post in options.postproc:
+            for post in set(options.postproc):
                 self.logger.debug('running %s' % post)
                 getattr(postproc, post)(args, options, self.logger)
 

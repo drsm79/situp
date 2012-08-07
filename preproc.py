@@ -51,7 +51,7 @@ def markdown(args, options, logger):
     Call the preprocessor with the markdown command you want to run, for
     example:
 
-    situp.py push -e foo -s prod --pre=markdown "perl /path/to/Markdown.pl --html4tags"
+    situp.py push --pre=markdown "perl /path/to/Markdown.pl --html4tags"
 
     Markdown in _docs is turned into json with _id matching the filename and
     a single key called content, containing the compiled markdown.
@@ -75,7 +75,7 @@ def markdown(args, options, logger):
             j = {'_id': filename, 'content': result[0]}
             _json.dump(j, open(_os.path.join(path, '%s.json' % filename), 'w'))
 
-    _compile_md(markdown, docs, logger, _md_to_json)
+        _compile_md(markdown, docs, logger, _md_to_json)
 
     if _os.path.exists(designs):
         def _md_to_html(path, filename, result):
@@ -85,39 +85,35 @@ def markdown(args, options, logger):
             f.write(footer)
             f.close()
 
-    for design in _os.listdir(designs):
-        designpath = _os.path.join(designs, design, '_attachments')
-        logger.debug('[MARKDOWN] %s' % designpath)
-        header = '<html><head></head><body>'
-        footer = '</body></html>'
-        header_f = _os.path.join(designpath, 'header.html')
-        if _os.path.exists(header_f):
-            logger.debug('Ladies and gentlemen we have a header')
-            header = open(header_f).read()
+        for design in _os.listdir(designs):
+            designpath = _os.path.join(designs, design, '_attachments')
+            logger.debug('[MARKDOWN] %s' % designpath)
+            header = '<html><head></head><body>'
+            footer = '</body></html>'
+            header_f = _os.path.join(designpath, 'header.html')
+            if _os.path.exists(header_f):
+                logger.debug('Ladies and gentlemen we have a header')
+                header = open(header_f).read()
 
-        footer_f = _os.path.join(designpath, 'footer.html')
-        if _os.path.exists(footer_f):
-            logger.debug('Ladies and gentlemen we have a footer')
-            footer = open(footer_f).read()
+            footer_f = _os.path.join(designpath, 'footer.html')
+            if _os.path.exists(footer_f):
+                logger.debug('Ladies and gentlemen we have a footer')
+                footer = open(footer_f).read()
 
-    _compile_md(markdown, designpath, logger, _md_to_html)
-
-
-def grunt(args, options, logger):
-    pass
+        _compile_md(markdown, designpath, logger, _md_to_html)
 
 
-def bbb(args, options, logger):
+def cmd(args, options, logger):
     """
-    run the bbb release task and copy the result into _attachments for the
-    named design(s). Assumes the bbb app is in the PWD
+    Run arbitrary commands in order and exit. For example:
+
+    situp.py push --pre=cmd "bbb package"
+
+    Can be multiple:
+
+    situp.py push --pre=cmd "bbb package" --pre=cmd "git commit"
+
+    Piping (foo|bar, foo > bar) and chaining (foo;bar) not currently supported.
     """
-    attachments = _os.path.join(_os.path.join(options.root, *options.design),
-                                '_attachments')
-    bld_dir = 'dist/release'
-    _external(['bbb', 'clean'], logger, '[bbb] Cleaning')
-    _external(['bbb', 'release'], logger, '[bbb] Building')
-    logger.info('[bbb] Copying release artifacts')
-    for artifact in ['%s/%s' % (bld_dir, x) for x in _os.listdir(bld_dir)]:
-        logger.debug(artifact)
-        copy2(artifact, attachments)
+    for cmd in args:
+        logger.debug(_external(cmd.split(' '), logger, '[pre-proc cmd] ')[0])
