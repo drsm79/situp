@@ -6,11 +6,7 @@ define([
   "underscore",
   "json2",
   "jquerycouch",
-  "backbonecouch",
-
-  // Plugins.
-  "plugins/backbone.layoutmanager"
-
+  "backbonecouch"
 ],
 
 function($, _, Backbone) {

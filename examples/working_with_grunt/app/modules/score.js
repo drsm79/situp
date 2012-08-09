@@ -23,13 +23,19 @@ function(app, Backbone, CouchView) {
 
   // Default collection.
   Score.Collection = CouchView.Collection.extend({
-    doreduce: true,
-    group_level: 1,
-    group: true,
+    // Collection of scores, limited to top 10
+    doreduce: false,
+    descending: true,
+    limit: 10,
     parse: function(response){
       return _.map(response, function(row){
-        return {name: row.key[0]};
+        return {player: row.value, score: row.key[1]};
       });
+    },
+    setGame: function(game){
+      // Set the game in the view parameters
+      this.startkey = [game, {}];
+      this.endkey = [game];
     }
   });
 

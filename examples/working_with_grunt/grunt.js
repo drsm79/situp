@@ -11,7 +11,7 @@ module.exports = function(grunt) {
     // The clean task ensures all files are removed from the dist/ directory so
     // that no files linger from previous builds.
     // Only clean the assets dir in the design!
-    clean: ["dist/", "_design/my_app/_attachments/assets"],
+    clean: ["dist/"],// "_design/my_app/_attachments/assets"],
 
     // The lint task will run the build configuration and the application
     // JavaScript through JSHint and report any errors.  You can change the

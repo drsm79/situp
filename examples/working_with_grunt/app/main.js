@@ -11,11 +11,7 @@ require([
   "app",
 
   // Main Router.
-  "router",
-
-  // Modules.
-  "modules/score",
-  "modules/game"
+  "router"
 ],
 
 function(app, Router, Game, Score) {
@@ -46,15 +42,5 @@ function(app, Router, Game, Score) {
       // calls this anyways.  The fragment is sliced from the root.
       Backbone.history.navigate(href, true);
     }
-  });
-  // Initialise the app
-  var pieces = window.location.pathname.split('/_design/');
-  // Set database and design doc based on URL
-  Backbone.couch.databaseName = pieces[0].replace('/', '');
-  Backbone.couch.ddocName  = pieces[1].split('/')[0];
-  Backbone.couch.enableChangesFeed = false;
-  app.games = new Game.View({
-    collection: new Game.Collection(),
-    scores: new Score.View({collection: new Score.Collection()})
   });
 });

@@ -23,19 +23,13 @@ function(app, Backbone, CouchView) {
 
   // Default collection.
   Game.Collection = CouchView.Collection.extend({
-    // Collection of scores, limited to top 10
-    doreduce: false,
-    descending: true,
-    limit: 10,
+    doreduce: true,
+    group_level: 1,
+    group: true,
     parse: function(response){
       return _.map(response, function(row){
-        return {player: row.value, score: row.key[1]};
+        return {name: row.key[0]};
       });
-    },
-    setGame: function(game){
-      // Set the game in the view parameters
-      this.startkey = [game, {}];
-      this.endkey = [game];
     }
   });
 
@@ -47,19 +41,26 @@ function(app, Backbone, CouchView) {
       this.collection.bind('add', this.render);
       this.collection.bind('remove', this.render);
       this.collection.bind('reset', this.render);
-      this.collection.fetch();
       this.scores = settings.scores;
+      this.collection.fetch();
       console.log('Game instance up');
     },
     render: function() {
       // Define how the collection is rendered into the page
       var dropdown = $('<select></select>');
       var that = this; // needed for the change event below
+
+      //console.log(this.foo);
+      //console.log(this.scores);
+      //console.log(that.scores);
+
       this.collection.each(function(game){
         dropdown.append('<option>' + game.get('name') + '</option>');
       });
       $('.games').html(dropdown);
+
       this.scores.setGame($('.games select :selected').text());
+
       // When the dropdown changes set the game for the scores collection,
       // triggering it's render function.
       $('.games select').change(function(event){

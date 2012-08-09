@@ -33,9 +33,6 @@ require.config({
       deps: ["backbone", "jquerycouch", "underscore"],
       // not sure what exports should be...
       exports: "Backbone.Couch"
-    },
-
-    // Backbone.LayoutManager depends on Backbone.
-    "plugins/backbone.layoutmanager": ["backbone"]
+    }
   }
 });
