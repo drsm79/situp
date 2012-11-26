@@ -807,6 +807,14 @@ class ListGen(Generator):
 }'''}
 
 
+class Search(Generator):
+    name = "search"
+    path_elem = "indexes"
+    _template = {'search': '''function(doc) {
+
+}'''}
+
+
 class Show(Generator):
     name = "show"
     path_elem = "shows"
@@ -1030,7 +1038,7 @@ class FetchVendors(Generator):
 if __name__ == "__main__":
     cli = CommandDispatch()
     for command in [AddServer, Push, Fetch, InstallVendor, View, ListGen, Show,
-            Document, Html, GitHook, Filter, Update, Validation]:
+            Search, Document, Html, GitHook, Filter, Update, Validation]:
         cli.register_command(command())
 
     if len(sys.argv) > 1 and sys.argv[1] in cli.commands.keys():
